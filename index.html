@@ -84,6 +84,13 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .ticker{overflow:hidden;white-space:nowrap;border:1px solid var(--gold);background:#1a1408;border-radius:10px;padding:10px 0;margin-top:12px}
 .ticker span{display:inline-block;padding-left:100%;animation:tick 18s linear infinite;color:var(--gold2);font-weight:700;font-size:.95rem}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+.money-slide{position:relative;min-height:92px}
+.money-slide .stat{display:none}
+.money-slide .stat.on{display:block}
+.credits{height:220px;overflow:hidden;position:relative;border:1px solid var(--line);border-radius:10px}
+.credits-inner{animation:roll 18s linear infinite}
+.credits table{margin:0}
+@keyframes roll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
 .gate{min-height:70vh;display:grid;place-items:center;padding:24px}
 .gate-box{width:min(460px,100%);background:var(--panel);border:1px solid #2c2618;border-radius:24px;padding:28px;text-align:center}
 .hidden{display:none}
@@ -161,7 +168,7 @@ const SEED_EXPENSES = [
   {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias"}
 ];
 const START=new Date(2025,0,1), MONTHLY=10000, GRACE=4, FIRST_DEPOSIT=100000;
-const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust.v4";
+const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust";
 
 function defaultSettings(){
   return {openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT};
@@ -188,12 +195,18 @@ function seed(){
 }
 function load(){
   try{
-    const raw=localStorage.getItem(KEY);
+    const keys=[KEY,"must2017trust.v4","must2017trust.v3","must2017trust.v2","must2017trust.v1"];
+    let raw=null;
+    for(const k of keys){ raw=localStorage.getItem(k); if(raw) break; }
     if(raw){
       const db=JSON.parse(raw);
       db.settings = Object.assign(defaultSettings(), db.settings||{});
       db.notices = db.notices||[];
-      (db.members||[]).forEach(m=>{ m.profile=m.profile||{spouse:"",parents:"",siblings:"",phone2:"",submitted:false}; });
+      db.resets = db.resets||[];
+      db.pending = db.pending||[];
+      if(!db.pin) db.pin="2017";
+      (db.members||[]).forEach(m=>{ m.profile=m.profile||{spouse:"",father:"",mother:"",guardian:"",siblings:[],phone2:"",submitted:false}; });
+      localStorage.setItem(KEY, JSON.stringify(db));
       return db;
     }
   }catch(e){}
@@ -301,12 +314,14 @@ function render(){
   const due=st.reduce((s,x)=>s+x.remaining,0);
   const collected=booksIn();
   const spent=DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+  document.getElementById("stats").className="stats money-slide";
   document.getElementById("stats").innerHTML = `
-    <div class="stat"><b>${ugx(collected)}</b><span>Money in (fees + contributions + first deposit)</span></div>
+    <div class="stat on"><b>${ugx(collected)}</b><span>Money in (fees + contributions + first deposit)</span></div>
     <div class="stat"><b>${ugx(due)}</b><span>Still to collect</span></div>
     <div class="stat"><b>${ugx(spent)}</b><span>Money spent</span></div>
     <div class="stat"><b>${ugx(collected-spent)}</b><span>Account balance</span></div>`;
-  const tabs = mode==="treasurer"?TABS_T:TABS_M;
+  startMoneySlide();
+  const tabs = mode==="treasurer"?TABS_T:(who?TABS_M:[]);
   document.getElementById("nav").innerHTML = tabs.map(([id,label])=>
     `<button class="${tab===id?'on':''}" onclick="tab='${id}';render()">${label}</button>`
   ).join("");
@@ -454,15 +469,31 @@ function pieSvg(collected,spent,due){
       <span><i class="dot" style="background:#3dd68c"></i> Still to collect ${ugx(due)}</span>
     </div></div>`;
 }
+function startMoneySlide(){
+  if(window._moneyTimer) return;
+  window._moneyI=0;
+  window._moneyTimer=setInterval(()=>{
+    const cards=document.querySelectorAll(".money-slide .stat");
+    if(!cards.length) return;
+    cards.forEach(c=>c.classList.remove("on"));
+    window._moneyI=(window._moneyI+1)%cards.length;
+    cards[window._moneyI].classList.add("on");
+  },2000);
+}
+function expRoll(list){
+  const rows=(list.length?list:[{date:"—",item:"No expenditure yet",amount:0}]);
+  const body=rows.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}</td><td>${ugx(e.amount)}</td></tr>`).join("");
+  return `<div class="credits"><div class="credits-inner"><table><thead><tr><th>Date</th><th>Item</th><th>Amount</th></tr></thead><tbody>${body}${body}</tbody></table></div></div>`;
+}
 function fundView(collected,spent,due){
   const year=new Date().getFullYear();
   const yearExp=DB.expenses.filter(e=>String(e.date||"").startsWith(String(year)));
+  const all=yearExp.length?yearExp:DB.expenses;
   return `<div class="card"><h3>Association money</h3>
     <p>Collected <b>${ugx(collected)}</b> · still to collect <b>${ugx(due)}</b> · spent <b>${ugx(spent)}</b> · account balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,due)}</div>
     <div class="card"><h3>Expenditure ${year}</h3>
-    <table><thead><tr><th>Date</th><th>Item</th><th>Amount</th></tr></thead>
-    <tbody>${yearExp.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}</td><td>${ugx(e.amount)}</td></tr>`).join("")||"<tr><td colspan=3>None</td></tr>"}</tbody></table></div>`;
+    ${expRoll(all)}</div>`;
 }
 function profileView(){
   if(!who) return `<div class="card"><p>Open My status first.</p></div>`;
@@ -833,13 +864,20 @@ function printFlyer(){
 function downloadFlyer(){
   const node=document.getElementById("flyer"); if(!node){ alert("Open the Flyer tab first"); return; }
   if(typeof html2pdf==="undefined"){ printFlyer(); return; }
-  html2pdf().set({
-    margin:8,
+  const opt={
+    margin:6,
     filename:"MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf",
-    image:{type:"jpeg",quality:0.95},
-    html2canvas:{scale:2,backgroundColor:"#111111"},
-    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
-  }).from(node).save();
+    image:{type:"jpeg",quality:0.98},
+    html2canvas:{scale:2,backgroundColor:"#111111",useCORS:true,windowWidth:900},
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+    pagebreak:{mode:["avoid-all"]}
+  };
+  html2pdf().set(opt).from(node).outputPdf("blob").then(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download=opt.filename; a.click();
+    window.open(url,"_blank");
+  }).catch(()=>printFlyer());
 }
 function flyerView(st){
   const list=st.filter(x=>x.m.active).sort((a,b)=>a.remaining-b.remaining);
