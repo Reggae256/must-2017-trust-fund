@@ -32,16 +32,16 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .dot{width:10px;height:10px;border-radius:50%}
 .photo{width:72px;height:72px;border-radius:12px;object-fit:cover;border:2px solid var(--gold);background:#111}
 .flyer-wrap{background:#f5c400;padding:14px}
-.flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:14px 12px;font-size:.72rem}
-.flyer h2{margin:0;text-align:center;color:#f5c400;font-size:1.15rem;letter-spacing:.06em}
-.flyer .sub{text-align:center;color:#eee;margin:4px 0 8px;font-size:.72rem}
-.flyer .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:2px 10px;font-size:.68rem}
+.flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:14px 12px;font-size:1rem}
+.flyer h2{margin:0;text-align:center;color:#f5c400;font-size:1.5rem;letter-spacing:.06em}
+.flyer .sub{text-align:center;color:#eee;margin:4px 0 8px;font-size:1rem}
+.flyer .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:4px 12px;font-size:.95rem}
 .flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .flyer table{width:100%;border-collapse:collapse;background:#f5e6a8;color:#111}
-.flyer th{background:#111;color:#fff;font-size:.62rem;padding:5px 6px}
-.flyer td{padding:4px 6px;border-bottom:1px solid #e0d08a;font-size:.7rem;font-weight:600}
-.flyer .bar{background:#111;color:#f5c400;text-align:center;padding:8px;margin-top:8px;font-weight:700}
-.flyer .legend-box{background:#fff;color:#111;padding:8px;margin-top:8px;font-size:.68rem}
+.flyer th{background:#111;color:#fff;font-size:.85rem;padding:7px 8px}
+.flyer td{padding:6px 8px;border-bottom:1px solid #e0d08a;font-size:.95rem;font-weight:700}
+.flyer .bar{background:#111;color:#f5c400;text-align:center;padding:10px;margin-top:8px;font-weight:700;font-size:1rem}
+.flyer .legend-box{background:#fff;color:#111;padding:10px;margin-top:8px;font-size:.9rem}
 .brand h1{margin:0;font-size:clamp(1.35rem,3vw,2rem);color:var(--gold2);letter-spacing:.02em}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
 .mode{display:flex;background:#000;border:1px solid #333;border-radius:999px;overflow:hidden}
@@ -85,8 +85,11 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .ticker{overflow:hidden;white-space:nowrap;border:1px solid var(--gold);background:#1a1408;border-radius:10px;padding:10px 0;margin-top:12px}
 .ticker span{display:inline-block;padding-left:100%;animation:tick 18s linear infinite;color:var(--gold2);font-weight:700;font-size:.95rem}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
-.hero{display:none;grid-template-columns:1.2fr 1fr;gap:12px;align-items:center;margin:12px 0}
+.hero{display:none;grid-template-columns:1fr 160px;gap:12px;align-items:center;margin:12px 0}
 .hero.show{display:grid}
+@media(max-width:800px){
+  .hero.show{grid-template-columns:1fr 120px}
+}
 .money-slide{position:relative;min-height:92px}
 .money-slide .stat{display:none}
 .money-slide .stat.on{display:block}
@@ -101,12 +104,8 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .hidden{display:none}
 footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
 @media(max-width:800px){
-  .hero.show{grid-template-columns:1fr}
   .stats{grid-template-columns:1fr}
   .flyer-grid{grid-template-columns:1fr 1fr}
-  .flyer{font-size:.78rem;padding:10px}
-  .flyer h2{font-size:1.05rem}
-  .flyer-row{font-size:.72rem;padding:3px 4px}
 }
 @media print{
   .noprint,.top .mode,.nav,footer,.stats{display:none!important}
@@ -157,10 +156,8 @@ footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
     <div class="mode noprint" id="modeSwitch"></div>
   </div>
   <div class="hero noprint" id="hero">
-    <div>
-      <div class="ticker" id="ticker"></div>
-      <div class="stats money-slide" id="stats"></div>
-    </div>
+    <div class="ticker" id="ticker" style="grid-column:1/-1"></div>
+    <div class="stats money-slide" id="stats"></div>
     <div id="heroPie"></div>
   </div>
   <div class="nav noprint" id="nav"></div>
@@ -241,11 +238,12 @@ function billThroughDate(now){
   }
   return now;
 }
-function monthsElapsed(now){ return Math.max(0, monthsBetween(START, billThroughDate(now))); }
+function monthsElapsed(now){ return Math.max(0, monthsBetween(START, now||new Date())); }
 function classify(m, now){
+  now=now||new Date();
   const elapsed=monthsElapsed(now);
   const expectedNow=elapsed*MONTHLY;
-  const paid=m.paid||0;
+  const paid=Number(m.paid||0);
   const remaining=Math.max(0, expectedNow-paid);
   const prepaid=Math.max(0, paid-expectedNow);
   const monthsBehind=Math.ceil(remaining/MONTHLY);
@@ -392,8 +390,8 @@ function memberHome(st){
       </div>
       <span class="pill ${found.code==='ok'?'ok':found.code==='wait'?'wait':found.code==='no'?'no':'offp'}">${found.label}</span>
       <p>Your paid total <b>${ugx(found.m.paid)}</b></p>
-      <p>Expected to this month <b>${ugx(found.expectedNow)}</b></p>
-      <p>Your balance to clear now <b>${ugx(found.remaining)}</b>
+      <p>Expected to this month <b>${ugx(found.expectedNow)}</b> (${monthsElapsed(new Date())} × 10,000)</p>
+      <p>Balance remaining to this month <b>${ugx(found.remaining)}</b>
       ${found.monthsBehind?` · ${found.monthsBehind} month(s) behind`:""}
       ${found.monthsAhead?` · prepaid ${found.monthsAhead} month(s)`:""}</p>
       <div class="progress"><i style="width:${pct}%"></i></div>
@@ -510,14 +508,9 @@ function miniPie(collected,due,spent,bal){
     a+=f;
   });
   const pcts=parts.map(p=>Math.round(p.v/t*100));
+  window._piePcts=pcts;
   return `<svg width="130" height="130" viewBox="0 0 100 100">${d}<circle cx="50" cy="50" r="22" fill="#0b0b0b"/>
-    <text x="50" y="53" text-anchor="middle" fill="#f3e2a5" font-size="10" font-weight="700">${pcts[0]}%</text></svg>
-    <div class="legend" style="margin-top:6px">
-      <span><i class="dot" style="background:#d4af37"></i> In ${pcts[0]}%</span>
-      <span><i class="dot" style="background:#3dd68c"></i> Due ${pcts[1]}%</span>
-      <span><i class="dot" style="background:#ff6b5a"></i> Spent ${pcts[2]}%</span>
-      <span><i class="dot" style="background:#60a5fa"></i> Bal ${pcts[3]}%</span>
-    </div>`;
+    <text id="piePct" x="50" y="53" text-anchor="middle" fill="#f3e2a5" font-size="10" font-weight="700">${pcts[0]}%</text></svg>`;
 }
 function startMoneySlide(){
   if(window._moneyTimer) return;
@@ -531,6 +524,8 @@ function startMoneySlide(){
     document.querySelectorAll("#heroPie path").forEach(p=>{
       p.classList.toggle("hot", Number(p.getAttribute("data-i"))===window._moneyI);
     });
+    const lab=document.getElementById("piePct");
+    if(lab && window._piePcts) lab.textContent=(window._piePcts[window._moneyI]||0)+"%";
   },2000);
 }
 function expRoll(list){
@@ -653,7 +648,7 @@ function treasHome(st,collected,spent){
     <p>In (contributions + fees + first deposit 100,000) <b>${ugx(collected)}</b> · spent <b>${ugx(spent)}</b> · balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,st.reduce((s,x)=>s+x.remaining,0))}
     ${updatesBox(true)}
-    <p>Expected to this month: <b>${ugx(monthsElapsed(new Date())*MONTHLY)}</b> per paying member (${monthsElapsed(new Date())} months since Jan 2025). Grace is ${GRACE} months.</p>
+    <p>Each member's remaining = months from Jan 2025 to this month × 10,000 − what they have paid. The 4-month grace does <b>not</b> reduce that figure. Grace only marks entitled (green) or not entitled (red).</p>
     <p>${(DB.settings.paused)?"Contributions are <b>paused</b> from "+esc(DB.settings.pauseFrom)+". New months are not being billed.":"Fund is <b>open</b> — billing continues each month until members vote to pause."}</p>
     <div class="row">
       ${DB.settings.paused
@@ -672,7 +667,7 @@ function treasHome(st,collected,spent){
   </div>`;
 }
 function remindText(x){
-  return `MUST Graduates 2017 Trust Fund: Hello ${x.m.name}, you are ${x.monthsBehind} month(s) behind. Amount to clear up to this month: UGX ${ugx(x.remaining)}. Pay to Stanbic ${BANK}. Grace is 4 months including this month. The fund is open until members decide to pause.`;
+  return `MUST Graduates 2017 Trust Fund: Hello ${x.m.name}, amount to clear up to this month is UGX ${ugx(x.remaining)} (${x.monthsBehind} month(s)). Pay to Stanbic ${BANK}.`;
 }
 function setPause(paused){
   if(!needPin()) return;
@@ -933,8 +928,10 @@ function bestContributor(){
 function printFlyer(){
   const node=document.getElementById("flyer"); if(!node) return;
   const w=window.open("","flyerprint");
-  if(!w){ alert("Allow popups once"); return; }
-  w.document.write(`<!DOCTYPE html><html><head><title>Flyer</title></head><body>${node.outerHTML}</body></html>`);
+  if(!w){ alert("Allow popups once to print"); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Flyer</title>
+    <style>body{margin:12px;font-family:Arial,sans-serif}.flyer-wrap{background:#f5c400;padding:12px}.flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:12px}h2{color:#f5c400;text-align:center}table{width:100%;background:#f5e6a8;color:#111;border-collapse:collapse}th{background:#111;color:#fff}td{padding:4px;border-bottom:1px solid #e0d08a}.bar{background:#111;color:#f5c400;text-align:center;padding:8px;margin-top:8px}.legend-box{background:#fff;color:#111;padding:8px;margin-top:8px}.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}</style>
+    </head><body>${node.outerHTML}<script>window.onload=function(){window.print();}<\/script></body></html>`);
   w.document.close();
 }
 function downloadFlyer(){
@@ -955,7 +952,13 @@ function downloadFlyer(){
   });
 }
 function flyerView(st){
-  const list=st.filter(x=>x.m.active).sort((a,b)=>a.remaining-b.remaining);
+  const now=new Date();
+  const elapsed=monthsElapsed(now);
+  const expected=elapsed*MONTHLY;
+  const list=DB.members.filter(m=>m.active).map(m=>{
+    const c=classify(m,now);
+    return {m,...c,remaining:Math.max(0, expected-Number(m.paid||0))};
+  }).sort((a,b)=>a.remaining-b.remaining);
   const mid=Math.ceil(list.length/2);
   const due=list.reduce((s,x)=>s+x.remaining,0);
   const col=(arr,off)=>`
@@ -967,18 +970,20 @@ function flyerView(st){
     </tr>`).join("")}</tbody></table>`;
   return `<div class="noprint row" style="margin-bottom:10px">
     <button class="btn gold" onclick="downloadFlyer()">Save as PDF</button>
-    <button class="btn ghost" onclick="printFlyer()">Open flyer page</button>
+    <button class="btn ghost" onclick="printFlyer()">Print flyer</button>
   </div>
   <div class="flyer-wrap"><div class="flyer" id="flyer">
     <h2>MUST GRADUATES 2017 TRUST FUND</h2>
-    <div class="sub">Outstanding Contribution Balances · ${flyerStamp()}<br>
+    <div class="sub">Outstanding to ${now.toLocaleString("en-UG",{month:"long",year:"numeric"})} · ${elapsed} months × 10,000 = ${expected.toLocaleString()} expected<br>
+    ${flyerStamp()}<br>
     <span class="email-pill">Email: ${EMAIL}</span></div>
     <div class="flyer-grid"><div>${col(list.slice(0,mid),0)}</div><div>${col(list.slice(mid),mid)}</div></div>
     <div class="bar">TOTAL MEMBERS: ${list.length} &nbsp;|&nbsp; TOTAL AMOUNT DUE: ${Number(due).toLocaleString()} UGX</div>
     <div class="legend-box">
       BENEFIT ENTITLEMENT STATUS:<br>
-      <span style="color:#166534">GREEN NAMES — entitled (inside 4-month grace).</span><br>
-      <span style="color:#b91c1c">RED NAMES — not entitled (beyond grace).</span>
+      Balance shown is up to this month (not reduced by grace).<br>
+      <span style="color:#166534">GREEN NAMES — entitled (paid enough to be within 4-month grace).</span><br>
+      <span style="color:#b91c1c">RED NAMES — not entitled (more than 4 months behind).</span>
     </div>
     <div class="bar">CLEAR YOUR BALANCE TO:<br>STANBIC BANK A/C ${BANK}</div>
   </div></div>`;
