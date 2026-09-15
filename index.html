@@ -31,11 +31,11 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .legend span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin:4px 0}
 .dot{width:10px;height:10px;border-radius:50%}
 .photo{width:72px;height:72px;border-radius:12px;object-fit:cover;border:2px solid var(--gold);background:#111}
-.flyer{background:#111;color:#fff;border:8px solid var(--gold);padding:10px 12px;font-size:.72rem}
-.flyer h2{margin:0;text-align:center;color:var(--gold);font-size:1.05rem}
-.flyer .sub{text-align:center;color:#ddd;margin:4px 0 8px;font-size:.7rem}
-.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
-.flyer-row{display:grid;grid-template-columns:22px 1fr 70px;gap:4px;padding:2px 6px;background:#1c1810}
+.flyer{background:linear-gradient(#ffe566,#f5c400);color:#111;border:8px solid #111;padding:10px 12px;font-size:.78rem}
+.flyer h2{margin:0;text-align:center;color:#111;font-size:1.15rem;letter-spacing:.04em}
+.flyer .sub{text-align:center;color:#222;margin:4px 0 8px;font-size:.72rem}
+.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px}
+.flyer-row{display:grid;grid-template-columns:22px 1fr 78px;gap:4px;padding:3px 6px;background:rgba(0,0,0,.08);font-weight:600}
 .brand h1{margin:0;font-size:clamp(1.35rem,3vw,2rem);color:var(--gold2);letter-spacing:.02em}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
 .mode{display:flex;background:#000;border:1px solid #333;border-radius:999px;overflow:hidden}
@@ -74,19 +74,18 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .officials{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
 .off-card{background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:12px}
 .off-card b{display:block;color:var(--gold2)}
-.flyer-wrap{background:#0a0a0a;padding:10px}
-.flyer{background:#111;color:#fff;border:10px solid var(--gold);padding:22px 18px}
-.flyer h2{margin:0;text-align:center;color:var(--gold);font-size:1.6rem}
-.flyer .sub{text-align:center;color:#ddd;margin:6px 0 14px;font-size:.85rem}
-.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
-.flyer-row{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;background:#1c1810;font-size:.82rem}
+.flyer-wrap{background:#111;padding:10px}
 .best{background:#3a2e12;color:#f3e2a5;text-align:center;padding:8px;margin:8px 0;font-weight:700;border:1px solid #d4af37}
 .ticker{overflow:hidden;white-space:nowrap;border:1px solid var(--gold);background:#1a1408;border-radius:10px;padding:10px 0;margin-top:12px}
 .ticker span{display:inline-block;padding-left:100%;animation:tick 18s linear infinite;color:var(--gold2);font-weight:700;font-size:.95rem}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+.hero{display:none;grid-template-columns:1fr 140px;gap:12px;align-items:center;margin:12px 0}
+.hero.show{display:grid}
 .money-slide{position:relative;min-height:92px}
 .money-slide .stat{display:none}
 .money-slide .stat.on{display:block}
+#heroPie svg path{opacity:.28;transition:opacity .4s}
+#heroPie svg path.hot{opacity:1}
 .credits{height:220px;overflow:hidden;position:relative;border:1px solid var(--line);border-radius:10px}
 .credits-inner{animation:roll 18s linear infinite}
 .credits table{margin:0}
@@ -96,7 +95,8 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .hidden{display:none}
 footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
 @media(max-width:800px){
-  .stats{grid-template-columns:1fr 1fr}
+  .hero.show{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr}
   .flyer-grid{grid-template-columns:1fr 1fr}
   .flyer{font-size:.78rem;padding:10px}
   .flyer h2{font-size:1.05rem}
@@ -106,7 +106,7 @@ footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
   .noprint,.top .mode,.nav,footer,.stats{display:none!important}
   body,.app{background:#fff;color:#000;padding:0;margin:0}
   .flyer-wrap{background:#fff;padding:0}
-  .flyer{border:10px solid #d4af37;background:#111;color:#fff;page-break-inside:avoid}
+  .flyer{page-break-inside:avoid}
 }
 </style>
 </head>
@@ -149,9 +149,14 @@ footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
       </div>
     </div>
     <div class="mode noprint" id="modeSwitch"></div>
-    <div class="ticker noprint" id="ticker"></div>
   </div>
-  <div class="stats" id="stats"></div>
+  <div class="hero noprint" id="hero">
+    <div>
+      <div class="ticker" id="ticker"></div>
+      <div class="stats money-slide" id="stats"></div>
+    </div>
+    <div id="heroPie"></div>
+  </div>
   <div class="nav noprint" id="nav"></div>
   <div id="view"></div>
   <footer class="noprint">MUST Education Graduates 2017 · Stanbic 9030026155907</footer>
@@ -171,7 +176,11 @@ const START=new Date(2025,0,1), MONTHLY=10000, GRACE=4, FIRST_DEPOSIT=100000;
 const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust";
 
 function defaultSettings(){
-  return {openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT};
+  return {
+    openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT,
+    tickerText:"",
+    treasurer:{name:"Atuha Reggae", email:EMAIL, phone:"256777649497"}
+  };
 }
 function booksIn(){
   const feesPaid=DB.members.reduce((s,m)=>s+(m.paid||0)+(m.fee||0),0);
@@ -303,23 +312,28 @@ function render(){
   document.getElementById("modeSwitch").innerHTML =
     `<button class="${mode==='member'?'on':''}" onclick="mode='member';tab='home';render()">Member</button>
      <button class="${mode==='treasurer'?'on':''}" onclick="if(needPin()){mode='treasurer';tab='home';render()}">Treasurer</button>`;
+  const firstPage = mode==="member" && !who;
+  const hero=document.getElementById("hero");
+  if(hero) hero.classList.toggle("show", firstPage);
   const best=bestContributor();
+  const custom=(DB.settings&&DB.settings.tickerText||"").trim();
   const tick=document.getElementById("ticker");
-  if(tick) tick.innerHTML = best
-    ? `<span>★ BEST CONTRIBUTOR — ${esc(best.name)} · ${ugx(best.paid)} · keep contributing to the MUST Graduates 2017 Trust Fund ★</span>`
-    : "";
+  const line = custom || (best?`★ BEST CONTRIBUTOR — ${best.name} · ${ugx(best.paid)} · keep contributing to the MUST Graduates 2017 Trust Fund ★`:"");
+  if(tick) tick.innerHTML = line?`<span>${esc(line)}</span>`:"";
   const now=new Date();
   const active=DB.members.filter(m=>m.active);
   const st=active.map(m=>({m,...classify(m,now)}));
   const due=st.reduce((s,x)=>s+x.remaining,0);
   const collected=booksIn();
   const spent=DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
-  document.getElementById("stats").className="stats money-slide";
+  const bal=collected-spent;
   document.getElementById("stats").innerHTML = `
-    <div class="stat on"><b>${ugx(collected)}</b><span>Money in (fees + contributions + first deposit)</span></div>
-    <div class="stat"><b>${ugx(due)}</b><span>Still to collect</span></div>
-    <div class="stat"><b>${ugx(spent)}</b><span>Money spent</span></div>
-    <div class="stat"><b>${ugx(collected-spent)}</b><span>Account balance</span></div>`;
+    <div class="stat on" data-slice="0"><b>${ugx(collected)}</b><span>Money in (fees + contributions + first deposit)</span></div>
+    <div class="stat" data-slice="1"><b>${ugx(due)}</b><span>Still to collect</span></div>
+    <div class="stat" data-slice="2"><b>${ugx(spent)}</b><span>Money spent</span></div>
+    <div class="stat" data-slice="3"><b>${ugx(bal)}</b><span>Account balance</span></div>`;
+  const pie=document.getElementById("heroPie");
+  if(pie) pie.innerHTML = miniPie(collected,due,spent,bal);
   startMoneySlide();
   const tabs = mode==="treasurer"?TABS_T:(who?TABS_M:[]);
   document.getElementById("nav").innerHTML = tabs.map(([id,label])=>
@@ -469,6 +483,24 @@ function pieSvg(collected,spent,due){
       <span><i class="dot" style="background:#3dd68c"></i> Still to collect ${ugx(due)}</span>
     </div></div>`;
 }
+function miniPie(collected,due,spent,bal){
+  const parts=[
+    {v:Math.max(0,collected),c:"#d4af37"},
+    {v:Math.max(0,due),c:"#3dd68c"},
+    {v:Math.max(0,spent),c:"#ff6b5a"},
+    {v:Math.max(0,bal),c:"#60a5fa"}
+  ];
+  const t=parts.reduce((s,p)=>s+p.v,0)||1;
+  let a=0, d="";
+  parts.forEach((p,i)=>{
+    const f=p.v/t, s=a*2*Math.PI-Math.PI/2, e=(a+f)*2*Math.PI-Math.PI/2;
+    const x1=50+40*Math.cos(s), y1=50+40*Math.sin(s);
+    const x2=50+40*Math.cos(e), y2=50+40*Math.sin(e);
+    d+=`<path class="${i===0?'hot':''}" data-i="${i}" d="M50 50 L${x1} ${y1} A40 40 0 ${f>0.5?1:0} 1 ${x2} ${y2} Z" fill="${p.c}"/>`;
+    a+=f;
+  });
+  return `<svg width="130" height="130" viewBox="0 0 100 100">${d}<circle cx="50" cy="50" r="22" fill="#0b0b0b"/></svg>`;
+}
 function startMoneySlide(){
   if(window._moneyTimer) return;
   window._moneyI=0;
@@ -478,12 +510,15 @@ function startMoneySlide(){
     cards.forEach(c=>c.classList.remove("on"));
     window._moneyI=(window._moneyI+1)%cards.length;
     cards[window._moneyI].classList.add("on");
+    document.querySelectorAll("#heroPie path").forEach(p=>{
+      p.classList.toggle("hot", Number(p.getAttribute("data-i"))===window._moneyI);
+    });
   },2000);
 }
 function expRoll(list){
-  const rows=(list.length?list:[{date:"—",item:"No expenditure yet",amount:0}]);
-  const body=rows.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}</td><td>${ugx(e.amount)}</td></tr>`).join("");
-  return `<div class="credits"><div class="credits-inner"><table><thead><tr><th>Date</th><th>Item</th><th>Amount</th></tr></thead><tbody>${body}${body}</tbody></table></div></div>`;
+  const rows=(list.length?list:[{date:"—",item:"No expenditure yet",amount:0,by:""}]);
+  const body=rows.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}<div style="color:var(--muted);font-size:.75rem">C/O ${esc(e.by||"—")}</div></td><td>${ugx(e.amount)}</td></tr>`).join("");
+  return `<div class="credits"><div class="credits-inner"><table><thead><tr><th>Date</th><th>Item / C/O</th><th>Amount</th></tr></thead><tbody>${body}${body}</tbody></table></div></div>`;
 }
 function fundView(collected,spent,due){
   const year=new Date().getFullYear();
@@ -571,12 +606,32 @@ function peopleMini(){
 }
 function peopleView(){ return peopleMini(); }
 
+function saveTicker(){
+  DB.settings.tickerText=(document.getElementById("tickEdit").value||"").trim();
+  save(); alert("Ticker saved"); render();
+}
+function saveTreasurer(){
+  DB.settings.treasurer={
+    name:document.getElementById("trName").value.trim(),
+    email:document.getElementById("trEmail").value.trim(),
+    phone:document.getElementById("trPhone").value.trim()
+  };
+  if(DB.settings.treasurer.email) DB.settings.recoveryEmail=DB.settings.treasurer.email;
+  save(); alert("Treasurer details saved"); render();
+}
 function treasHome(st,collected,spent){
   const red=st.filter(x=>x.code==="no");
   const wait=st.filter(x=>x.code==="wait");
   return `<div class="card">
     <h3>Treasurer desk</h3>
     ${(()=>{const b=bestContributor(); return b?`<p class="best">Best contributor: ${esc(b.name)} · ${ugx(b.paid)}</p>`:"";})()}
+    <label>News ticker (shown on first page only)</label>
+    <textarea id="tickEdit" rows="2">${esc((DB.settings.tickerText||""))}</textarea>
+    <button class="btn gold" style="margin:6px 0 10px" onclick="saveTicker()">Save ticker</button>
+    <label>Treasurer name</label><input id="trName" value="${esc((DB.settings.treasurer&&DB.settings.treasurer.name)||"")}"/>
+    <label>Treasurer email</label><input id="trEmail" value="${esc((DB.settings.treasurer&&DB.settings.treasurer.email)||EMAIL)}"/>
+    <label>Treasurer phone</label><input id="trPhone" value="${esc((DB.settings.treasurer&&DB.settings.treasurer.phone)||"")}"/>
+    <button class="btn ghost" style="margin:6px 0 10px" onclick="saveTreasurer()">Save treasurer details</button>
     <p>In (contributions + fees + first deposit 100,000) <b>${ugx(collected)}</b> · spent <b>${ugx(spent)}</b> · balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,st.reduce((s,x)=>s+x.remaining,0))}
     ${updatesBox(true)}
@@ -847,43 +902,28 @@ function bestContributor(){
 function printFlyer(){
   const node=document.getElementById("flyer"); if(!node) return;
   const w=window.open("","flyerprint");
-  w.document.write(`<!DOCTYPE html><html><head><title>Flyer</title>
+  if(!w){ alert("Allow popups once to print or save PDF"); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>MUST 2017 Flyer</title>
     <style>
-      body{margin:12px;background:#111;color:#fff;font-family:sans-serif}
-      .flyer{border:10px solid #d4af37;padding:14px}
-      h2{color:#d4af37;text-align:center;margin:0}
-      .sub{text-align:center;margin:8px 0}
-      .flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
-      .flyer-row{display:grid;grid-template-columns:22px 1fr 80px;background:#1c1810;padding:4px 6px}
-      .best{background:#3a2e12;color:#f3e2a5;text-align:center;padding:8px;margin:8px 0;font-weight:700}
-    </style></head><body>${node.outerHTML}</body></html>`);
+      @page{size:A4;margin:10mm}
+      body{margin:0;font-family:Arial,sans-serif;background:#fff}
+      .flyer{background:linear-gradient(#ffe566,#f5c400);color:#111;border:10px solid #111;padding:12px}
+      h2{text-align:center;margin:0;font-size:20px}
+      .sub{text-align:center;margin:6px 0;font-size:12px}
+      .flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+      .flyer-row{display:grid;grid-template-columns:22px 1fr 78px;padding:3px 6px;background:rgba(0,0,0,.08);font-size:12px;font-weight:700}
+      .best{background:#111;color:#f5c400;text-align:center;padding:8px;margin:8px 0;font-weight:700}
+    </style></head><body>${node.outerHTML}
+    <script>window.onload=function(){window.focus();window.print();}<\/script>
+    </body></html>`);
   w.document.close();
-  w.focus();
-  setTimeout(()=>w.print(),300);
 }
-function downloadFlyer(){
-  const node=document.getElementById("flyer"); if(!node){ alert("Open the Flyer tab first"); return; }
-  if(typeof html2pdf==="undefined"){ printFlyer(); return; }
-  const opt={
-    margin:6,
-    filename:"MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf",
-    image:{type:"jpeg",quality:0.98},
-    html2canvas:{scale:2,backgroundColor:"#111111",useCORS:true,windowWidth:900},
-    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
-    pagebreak:{mode:["avoid-all"]}
-  };
-  html2pdf().set(opt).from(node).outputPdf("blob").then(blob=>{
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url; a.download=opt.filename; a.click();
-    window.open(url,"_blank");
-  }).catch(()=>printFlyer());
-}
+function downloadFlyer(){ printFlyer(); }
 function flyerView(st){
   const list=st.filter(x=>x.m.active).sort((a,b)=>a.remaining-b.remaining);
   const mid=Math.ceil(list.length/2);
   const best=bestContributor();
-  const col=(arr,off)=>arr.map((x,i)=>`<div class="flyer-row" style="color:${x.code==='no'?'#fecaca':x.code==='ok'||x.code==='wait'?'#bbf7d0':'#fff'}"><span>${off+i+1}</span><span>${esc(x.m.name)}${best&&x.m.name===best.name?" ★":""}</span><span>${ugx(x.remaining)}</span></div>`).join("");
+  const col=(arr,off)=>arr.map((x,i)=>`<div class="flyer-row" style="color:${x.code==='no'?'#7f1d1d':x.code==='ok'||x.code==='wait'?'#14532d':'#111'}"><span>${off+i+1}</span><span>${esc(x.m.name)}${best&&x.m.name===best.name?" ★":""}</span><span>${ugx(x.remaining)}</span></div>`).join("");
   return `<div class="noprint row" style="margin-bottom:10px">
     <button class="btn gold" onclick="printFlyer()">Print flyer</button>
     <button class="btn ghost" onclick="downloadFlyer()">Save as PDF</button>
