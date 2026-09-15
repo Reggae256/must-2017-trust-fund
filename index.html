@@ -720,6 +720,7 @@ function membersView(){
         <button class="btn ghost" onclick="showStmt(${x.m.id})">Statement</button>
         ${x.m.profile&&x.m.profile.submitted?`<button class="btn ghost" onclick="showFamily(${x.m.id})">Family</button>`:""}
         <button class="btn ghost" onclick="fillEdit(${x.m.id})">Edit</button>
+        <button class="btn danger" onclick="deleteMember(${x.m.id})">Delete</button>
       </td>
     </tr>`).join("")}</tbody></table></div>
     <div id="stmtBox"></div>`;
@@ -734,6 +735,13 @@ function liveSearch(q){
     const name=(tr.children[1]&&tr.children[1].textContent||"").toLowerCase();
     tr.style.display=name.includes(qq)?"":"none";
   });
+}
+function deleteMember(id){
+  if(!needPin()) return;
+  const m=DB.members.find(x=>x.id===id); if(!m) return;
+  if(!confirm("Delete "+m.name+" from the register? This cannot be undone unless you import a backup.")) return;
+  DB.members=DB.members.filter(x=>x.id!==id);
+  save(); render();
 }
 function fillEdit(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
@@ -783,24 +791,48 @@ function showStmt(id){
     <tbody>${(m.tx||[]).map(t=>`<tr><td>${esc(t.at).slice(0,16)}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>No lines</td></tr>"}</tbody></table></div>`);
 }
 function printStmt(){ window.print(); }
+function openFile(blob, filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=filename; a.target="_blank"; a.rel="noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+  const w=window.open(url,"_blank");
+  if(!w){
+    const viewer=window.open("","fileview");
+    if(viewer) viewer.location.href=url;
+    else location.href=url;
+  }
+}
+function htmlToOpen(html, filename){
+  const pdfName=filename.replace(/\.html$/i,".pdf");
+  if(typeof html2pdf!=="undefined"){
+    const wrap=document.createElement("div");
+    wrap.innerHTML=html;
+    wrap.style.cssText="position:fixed;left:-9999px;top:0;background:#fff;color:#111;padding:16px;width:700px";
+    document.body.appendChild(wrap);
+    html2pdf().set({
+      margin:10, filename:pdfName,
+      image:{type:"jpeg",quality:0.98},
+      html2canvas:{scale:2,backgroundColor:"#ffffff"},
+      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
+    }).from(wrap).outputPdf("blob").then(blob=>{
+      wrap.remove(); openFile(blob, pdfName);
+    }).catch(()=>{ wrap.remove(); openFile(new Blob([html],{type:"text/html"}), filename); });
+  } else openFile(new Blob([html],{type:"text/html"}), filename);
+}
 function downloadStmt(name){
   const box=document.getElementById("stRows");
-  const html="<html><body>"+(box?box.innerHTML:"")+"</body></html>";
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([html],{type:"text/html"}));
-  a.download=(name||"statement")+"-statement.html"; a.click();
+  const html="<!DOCTYPE html><html><body style='font-family:sans-serif;padding:16px'><h2>"+esc(name||"Statement")+"</h2>"+(box?box.innerHTML:"")+"</body></html>";
+  htmlToOpen(html,(name||"statement")+"-statement.html");
 }
 function downloadMemberStmt(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
   const cl=classify(m,new Date());
   const rows=(m.tx||[]).map(t=>`<tr><td>${esc(String(t.at).slice(0,16))}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>No lines</td></tr>";
-  const html=`<html><body style="font-family:sans-serif"><h2>${esc(m.name)}</h2>
-    <p>Paid ${ugx(m.paid)} · Remaining ${ugx(cl.remaining)}</p>
+  const html=`<!DOCTYPE html><html><body style="font-family:sans-serif;padding:16px"><h2>${esc(m.name)}</h2>
+    <p>Paid ${ugx(m.paid)} · Remaining to this month ${ugx(cl.remaining)}</p>
     <table border="1" cellspacing="0" cellpadding="6"><tr><th>When</th><th>Note</th><th>Amount</th></tr>${rows}</table></body></html>`;
-  const blob=new Blob([html],{type:"text/html"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a"); a.href=url; a.download=m.name+"-statement.html"; a.click();
-  window.open(url,"_blank");
+  htmlToOpen(html, m.name+"-statement.html");
 }
 function filterStmt(id){
   const m=DB.members.find(x=>x.id===id);
@@ -945,11 +977,7 @@ function downloadFlyer(){
     html2canvas:{scale:2,backgroundColor:"#f5c400",windowWidth:900},
     jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
     pagebreak:{mode:["avoid-all"]}
-  }).from(node).outputPdf("blob").then(blob=>{
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download=name; a.click();
-    window.open(url,"_blank");
-  });
+  }).from(node).outputPdf("blob").then(blob=>openFile(blob, name));
 }
 function flyerView(st){
   const now=new Date();
