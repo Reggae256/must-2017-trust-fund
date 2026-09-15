@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0b0b0b"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>MUST Graduates 2017 Trust Fund</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0b0b; --panel:#141414; --card:#1a1a1a; --line:#2a2a2a;
+  --gold:#d4af37; --gold2:#f3e2a5; --ink:#f6f1e4; --muted:#9a927f;
+  --green:#3dd68c; --green-dim:#163526; --red:#ff6b5a; --red-dim:#3a1612;
+  --amber:#f5c15c; --amber-dim:#3a2e12; --teal:#25d366;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Source Sans 3",system-ui,sans-serif}
+h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
+.app{max-width:1180px;margin:0 auto;padding:18px 16px 72px}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:18px 20px;background:
+  radial-gradient(800px 200px at 10% -20%, rgba(212,175,55,.18), transparent),
+  linear-gradient(180deg,#161616,#101010);border:1px solid #2c2618;border-radius:22px}
+.crest{width:64px;height:64px;flex:none}
+.brand h1{margin:0;font-size:clamp(1.35rem,3vw,2rem);color:var(--gold2);letter-spacing:.02em}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
+.mode{display:flex;background:#000;border:1px solid #333;border-radius:999px;overflow:hidden}
+.mode button{border:0;background:transparent;color:var(--muted);padding:8px 14px;font:inherit;cursor:pointer}
+.mode button.on{background:var(--gold);color:#111;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.stat b{display:block;font-size:1.25rem;color:var(--gold2)}
+.stat span{color:var(--muted);font-size:.75rem}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
+.nav button,.btn{border:1px solid #3a3322;background:#1c1c1c;color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer}
+.nav button.on,.btn.gold{background:var(--gold);color:#111;border-color:var(--gold);font-weight:700}
+.btn.ghost{background:transparent}
+.btn.wa{background:#128C7E;border-color:#128C7E;color:#fff;text-decoration:none;display:inline-block}
+.btn.danger{background:var(--red);border-color:var(--red);color:#111;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:0 0 12px}
+.card h3{margin:0 0 10px;color:var(--gold2)}
+label{display:block;font-size:.78rem;color:var(--muted);margin:8px 0 4px}
+input,select,textarea{width:100%;background:#0f0f0f;border:1px solid #333;color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.75rem;font-weight:700}
+.ok{background:var(--green-dim);color:var(--green)}
+.wait{background:var(--amber-dim);color:var(--amber)}
+.no{background:var(--red-dim);color:var(--red)}
+.offp{background:#222;color:#888}
+table{width:100%;border-collapse:collapse}
+th,td{padding:9px 8px;border-bottom:1px solid #2a2a2a;text-align:left;font-size:.9rem;vertical-align:top}
+th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase}
+.progress{height:8px;background:#2a2a2a;border-radius:99px;overflow:hidden;margin-top:8px}
+.progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.chatlog{max-height:380px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.bubble{background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:10px 12px}
+.bubble.official{border-color:#3a3322}
+.bubble small{color:var(--muted)}
+.tag{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--gold)}
+.officials{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.off-card{background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:12px}
+.off-card b{display:block;color:var(--gold2)}
+.flyer-wrap{background:#0a0a0a;padding:10px}
+.flyer{background:#111;color:#fff;border:10px solid var(--gold);padding:22px 18px}
+.flyer h2{margin:0;text-align:center;color:var(--gold);font-size:1.6rem}
+.flyer .sub{text-align:center;color:#ddd;margin:6px 0 14px;font-size:.85rem}
+.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.flyer-row{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;background:#1c1810;font-size:.82rem}
+.gate{min-height:70vh;display:grid;place-items:center;padding:24px}
+.gate-box{width:min(460px,100%);background:var(--panel);border:1px solid #2c2618;border-radius:24px;padding:28px;text-align:center}
+.hidden{display:none}
+footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
+@media(max-width:800px){
+  .stats{grid-template-columns:1fr 1fr}
+  .flyer-grid{grid-template-columns:1fr}
+}
+@media print{
+  .noprint,.top .mode,.nav,footer{display:none!important}
+  body,.app{background:#fff;color:#000;padding:0}
+  .flyer{border-width:8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="row" style="align-items:center">
+      <svg class="crest" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="47" fill="none" stroke="#d4af37" stroke-width="3"/>
+        <rect x="26" y="24" width="24" height="24" fill="#003399"/>
+        <rect x="50" y="24" width="24" height="24" fill="#d4af37"/>
+        <rect x="26" y="48" width="24" height="24" fill="#d4af37"/>
+        <rect x="50" y="48" width="24" height="24" fill="#003399"/>
+        <rect x="26" y="24" width="48" height="48" fill="none" stroke="#f3e2a5" stroke-width="1.5"/>
+        <rect x="20" y="76" width="60" height="14" fill="#d4af37"/>
+        <text x="50" y="86" text-anchor="middle" font-size="6.2" font-family="Arial" font-weight="700">SUCCEED WE MUST</text>
+      </svg>
+      <div class="brand">
+        <h1>MUST Graduates 2017 Trust Fund</h1>
+        <p>Education class of 2017 · Stanbic 9030026155907 · educationmustgraduates2017@gmail.com</p>
+      </div>
+    </div>
+    <div class="mode noprint" id="modeSwitch"></div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="nav noprint" id="nav"></div>
+  <div id="view"></div>
+  <footer class="noprint">Free volunteer tool · data stays on this device until you export · default treasurer PIN <b>2017</b> · Add to Home Screen for an app icon</footer>
+</div>
+
+<script>
+const SEED_MEMBERS = [{"name":"Bankunda Aron","fee":10000,"active":true,"paid":240000,"phone":"256756870201","role":"Chairperson","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Arinda Jackline","fee":10000,"active":true,"paid":240000,"phone":"256786028722","role":"Vice Chairperson","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Atwine Onesmus","fee":10000,"active":true,"paid":120000,"phone":"256773512742","role":"Secretary","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Atuha Reggae","fee":10000,"active":true,"paid":240000,"phone":"256777649497","role":"Treasurer","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Anyama Fred","fee":10000,"active":true,"paid":100000,"phone":"256773512742","role":"PRO","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000}},{"name":"Ssenkayi John Baptist","fee":10000,"active":true,"paid":120000,"phone":"256778956611","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Mubinga Ivan","fee":10000,"active":true,"paid":130000,"phone":"256751732553","role":"Member","months":{"Jan":20000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Twinoburyo Allan","fee":10000,"active":true,"paid":120000,"phone":"256759484343","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Evan Muhimbise","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Senyonjo Amos","fee":10000,"active":true,"paid":30000,"phone":"256784256956","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000}},{"name":"Okello George","fee":10000,"active":true,"paid":120000,"phone":"256783957249","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Wandira Aggrey","fee":10000,"active":true,"paid":240000,"phone":"256778461179","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Asaba Stephen","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ssemujju Edward","fee":10000,"active":true,"paid":240000,"phone":"","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Mbaziira Emmy Muhammed","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Mwine Job K","fee":10000,"active":true,"paid":240000,"phone":"256778878786","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Arthur Peterson Komugisa","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ahimbisibwe Isaac","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nuwahereza Levious","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"BRIGHTON Mugumya","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Simon Atukwatse","fee":10000,"active":true,"paid":240000,"phone":"256705160424","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Arnold Tweteitse","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Tukundane Alex","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Domiano Turyatunga","fee":10000,"active":true,"paid":60000,"phone":"256778667713","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000}},{"name":"Lukumbi Cymon Peter","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kasakya Jonah","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Chemonges John Paul","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Besigye John Benzene","fee":10000,"active":true,"paid":200000,"phone":"256789646467","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Mulokwa Fred","fee":10000,"active":true,"paid":30000,"phone":"256772561115","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000}},{"name":"Majariti Nathan","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nuwamanya innocent","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Turyahabwe Julius","fee":10000,"active":true,"paid":60000,"phone":"256705912490","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000}},{"name":"Nuwarinda Osbert","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Baguma Paul","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Manigamukama Onan","fee":10000,"active":true,"paid":240000,"phone":"256771211619","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Nabakooza Peace","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ampaire Jackson","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Natukwatsa Felix","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nalugo Immaculate","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Twijukye paddy.","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Muhumuza Raymond","fee":10000,"active":true,"paid":120000,"phone":"256757356608","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Luswata David","fee":10000,"active":true,"paid":0,"phone":"256787508218","role":"Member","months":{}},{"name":"Turyasingura Mathias","fee":10000,"active":true,"paid":240000,"phone":"256771214820","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Nakafeero Salma","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ayesigye Irene","fee":10000,"active":true,"paid":240000,"phone":"256772579033","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Munezero Urban","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kadambi Joel","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Muteganda Shepherd","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Muloogi Derick","fee":10000,"active":true,"paid":0,"phone":"256752035901","role":"Member","months":{}},{"name":"Obore Charles","fee":10000,"active":true,"paid":0,"phone":"256787199745","role":"Member","months":{}},{"name":"Kanyesigye Paul","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Arinaitwe Doreen","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nuwagaba Gabriel","fee":10000,"active":true,"paid":180000,"phone":"256758530322","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Kirega Ivan","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kato Andrew Francis","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kamugisha Alex","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Tukamuheebwa Crispus","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Byaruhanga Florence","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kyempeire Ignatius","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Karugaba Benjamin","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Katwesigye Benson","fee":10000,"active":true,"paid":130000,"phone":"256782180838","role":"Member","months":{"Jan":20000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Aryaija Neriah","fee":10000,"active":true,"paid":160000,"phone":"256756560194","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Zemei Zirya","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Daisy Namirembe","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Mujinya Julius","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Alira Daniel","fee":10000,"active":true,"paid":130000,"phone":"256789944424","role":"Member","months":{"Jan":20000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Muhairwe Godwin","fee":10000,"active":true,"paid":120000,"phone":"256703271366","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Kato Andrew","fee":10000,"active":true,"paid":120000,"phone":"256753263303","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}}];
+const SEED_EXPENSES = [
+  {item:"Registration and opening account", date:"2025-04-01", amount:528200, by:"Executive"},
+  {item:"Transport x2 mobile banking / FlexiPay", date:"2025-04-15", amount:16000, by:"Treasurer"},
+  {item:"Godwin's wedding party", date:"2025-08-23", amount:250000, by:"Godwin"},
+  {item:"Refund to Julius Turyahabwe", date:"2026-05-05", amount:47500, by:"Julius"},
+  {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias"}
+];
+const START=new Date(2025,0,1), MONTHLY=10000, CYCLE=240000, GRACE=4;
+const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust.v2";
+
+function seed(){
+  return {
+    pin:"2017",
+    members: SEED_MEMBERS.map((m,i)=>({id:i+1,...m,tx:m.paid?[{type:"Opening balance from Excel",amount:m.paid,at:"2026-09-14"}]:[]})),
+    expenses: SEED_EXPENSES.slice(),
+    chat:[{from:"Trust Fund",to:"Everyone",text:"Welcome. Use this board for association matters. The treasurer sees a summary of money, benefits and complaints — not every greeting.",at:new Date().toISOString(),role:"system"}]
+  };
+}
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw) return JSON.parse(raw);}catch(e){}
+  return seed();
+}
+let DB=load();
+function save(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
+
+function monthsElapsed(now){ return (now.getFullYear()-START.getFullYear())*12 + (now.getMonth()-START.getMonth()) + 1; }
+function classify(m, now){
+  const elapsed=monthsElapsed(now);
+  const expectedNow=Math.min(elapsed,24)*MONTHLY;
+  const remaining=Math.max(0, CYCLE-(m.paid||0));
+  const behind=Math.max(0, expectedNow-(m.paid||0));
+  const monthsBehind=Math.ceil(behind/MONTHLY);
+  if(!m.active) return {code:"inactive",label:"Not registered",remaining,monthsBehind,expectedNow};
+  if(behind<=0) return {code:"ok",label:"Entitled · cleared",remaining,monthsBehind:0,expectedNow};
+  if(monthsBehind<=GRACE) return {code:"wait",label:"Entitled · in grace",remaining,monthsBehind,expectedNow};
+  return {code:"no",label:"Not entitled",remaining,monthsBehind,expectedNow};
+}
+function ugx(n){ return Number(n||0).toLocaleString("en-UG"); }
+function wa(phone,text){
+  if(!phone) return "";
+  return "https://wa.me/"+String(phone).replace(/\D/g,"")+"?text="+encodeURIComponent(text||"");
+}
+function esc(s){ return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+function tagMsg(t){
+  t=(t||"").toLowerCase();
+  if(/pay|balanc|contribut|ugx|behind|clear|remain/.test(t)) return "payment";
+  if(/benefit|burial|wedding|entitle|funeral/.test(t)) return "benefit";
+  if(/complain|not recorded|missing|wrong|delay|late/.test(t)) return "complaint";
+  return "social";
+}
+
+let mode="member", tab="home", authed=false, who="";
+const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["chat","Chat"],["expenses","Expenses"],["flyer","Flyer"],["backup","Backup"]];
+const TABS_M=[["home","My status"],["chat","Chat"],["flyer","Balances"],["people","Executive"]];
+
+function needPin(){
+  if(authed) return true;
+  const p=prompt("Treasurer PIN (default 2017)");
+  if(p===DB.pin){ authed=true; return true; }
+  alert("Wrong PIN"); return false;
+}
+
+function render(){
+  document.getElementById("modeSwitch").innerHTML =
+    `<button class="${mode==='member'?'on':''}" onclick="mode='member';tab='home';render()">Member</button>
+     <button class="${mode==='treasurer'?'on':''}" onclick="if(needPin()){mode='treasurer';tab='home';render()}">Treasurer</button>`;
+  const now=new Date();
+  const active=DB.members.filter(m=>m.active);
+  const st=active.map(m=>({m,...classify(m,now)}));
+  const due=st.reduce((s,x)=>s+x.remaining,0);
+  const collected=DB.members.reduce((s,m)=>s+(m.paid||0)+(m.fee||0),0);
+  const spent=DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><b>${active.length}</b><span>Active members</span></div>
+    <div class="stat"><b>${st.filter(x=>x.code==='ok'||x.code==='wait').length}</b><span>Entitled today</span></div>
+    <div class="stat"><b>${ugx(due)}</b><span>Still to collect (cycle)</span></div>
+    <div class="stat"><b>${ugx(collected-spent)}</b><span>Books balance</span></div>`;
+  const tabs = mode==="treasurer"?TABS_T:TABS_M;
+  document.getElementById("nav").innerHTML = tabs.map(([id,label])=>
+    `<button class="${tab===id?'on':''}" onclick="tab='${id}';render()">${label}</button>`
+  ).join("");
+  const v=document.getElementById("view");
+  if(mode==="member"){
+    if(tab==="home") v.innerHTML=memberHome(st);
+    if(tab==="chat") v.innerHTML=chatView(false);
+    if(tab==="flyer") v.innerHTML=flyerView(st);
+    if(tab==="people") v.innerHTML=peopleView();
+  } else {
+    if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
+    if(tab==="members") v.innerHTML=membersView();
+    if(tab==="pay") v.innerHTML=payView();
+    if(tab==="chat") v.innerHTML=chatView(true);
+    if(tab==="expenses") v.innerHTML=expView(collected,spent);
+    if(tab==="flyer") v.innerHTML=flyerView(st);
+    if(tab==="backup") v.innerHTML=backupView();
+  }
+}
+
+function memberHome(st){
+  const found = who ? st.concat(DB.members.filter(m=>!m.active).map(m=>({m,...classify(m,new Date())}))).find(x=>x.m.name.toLowerCase()===who.toLowerCase()) : null;
+  const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
+  let card=`<div class="card"><h3>Find your name</h3>
+    <input list="nm" id="whoBox" placeholder="Type your full name" value="${esc(who)}" onchange="who=this.value;render()"/>
+    <datalist id="nm">${names}</datalist>
+    <p style="color:var(--muted);font-size:.85rem;margin:8px 0 0">Cycle Jan 2025 – Dec 2026 · 10,000 a month · 4 months grace including this month.</p></div>`;
+  if(found){
+    const pct=Math.min(100, Math.round((found.m.paid||0)/CYCLE*100));
+    card += `<div class="card">
+      <h3>${esc(found.m.name)}</h3>
+      <span class="pill ${found.code==='ok'?'ok':found.code==='wait'?'wait':found.code==='no'?'no':'offp'}">${found.label}</span>
+      <p>Paid <b>${ugx(found.m.paid)}</b> of ${ugx(CYCLE)} · remaining <b>${ugx(found.remaining)}</b>
+      ${found.monthsBehind?` · ${found.monthsBehind} month(s) behind`:""}</p>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+      <p>Pay to <b>Stanbic ${BANK}</b></p>
+      ${found.remaining>0?`<a class="btn wa" href="${wa(found.m.phone, `I have paid / I will clear UGX ${ugx(found.remaining)} to Stanbic ${BANK}.`)}">Tell treasurer on WhatsApp</a>`:""}
+    </div>`;
+  }
+  return card+peopleMini();
+}
+function peopleMini(){
+  const officials=DB.members.filter(m=>m.role&&m.role!=="Member");
+  return `<div class="card"><h3>Talk to the executive</h3>
+    <div class="officials">${officials.map(o=>`
+      <div class="off-card"><b>${esc(o.role)}</b>${esc(o.name)}
+      <div class="row" style="margin-top:8px">${o.phone?`<a class="btn wa" href="${wa(o.phone,`Hello ${o.role}, I am a MUST 2017 member.`)}" target="_blank">WhatsApp</a>`:""}</div></div>`).join("")}
+    </div>
+    <p style="margin:10px 0 0"><a class="btn ghost" href="mailto:${EMAIL}">Email ${EMAIL}</a></p>
+  </div>`;
+}
+function peopleView(){ return peopleMini(); }
+
+function treasHome(st,collected,spent){
+  const red=st.filter(x=>x.code==="no");
+  const wait=st.filter(x=>x.code==="wait");
+  return `<div class="card">
+    <h3>Treasurer desk</h3>
+    <p>Collected fees + contributions <b>${ugx(collected)}</b> · spent <b>${ugx(spent)}</b> · balance <b>${ugx(collected-spent)}</b></p>
+    <p>Expected to this month: ${ugx(Math.min(monthsElapsed(new Date()),24)*MONTHLY)} per paying member. Entitled if not more than ${GRACE} months behind.</p>
+  </div>
+  <div class="card"><h3>Beyond grace — remind now</h3>
+    ${red.length?red.map(x=>`<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid #222">
+      <div><b style="color:var(--red)">${esc(x.m.name)}</b><div style="color:var(--muted);font-size:.8rem">${x.monthsBehind} months · ${ugx(x.remaining)}</div></div>
+      ${x.m.phone?`<a class="btn wa" target="_blank" href="${wa(x.m.phone, remindText(x))}">WhatsApp</a>`:`<span class="pill offp">No phone</span>`}
+    </div>`).join(""):"<p>Nobody is beyond grace.</p>"}
+  </div>
+  <div class="card"><h3>Inside grace</h3>
+    ${wait.length?wait.map(x=>`<div>${esc(x.m.name)} · ${x.monthsBehind} mo · ${ugx(x.remaining)}</div>`).join(""):"<p>None.</p>"}
+  </div>`;
+}
+function remindText(x){
+  return `MUST Graduates 2017 Trust Fund: Hello ${x.m.name}, you are ${x.monthsBehind} month(s) behind. Amount to clear the 2025/26 cycle: UGX ${ugx(x.remaining)}. Pay to Stanbic ${BANK}. Grace is 4 months including this month.`;
+}
+
+function membersView(){
+  const q=(window._q||"").toLowerCase();
+  const filter=window._flt||"active";
+  let rows=DB.members.map(m=>({m,...classify(m,new Date())}));
+  if(filter==="active") rows=rows.filter(x=>x.m.active);
+  else if(filter!=="all") rows=rows.filter(x=>x.code===filter);
+  rows=rows.filter(x=>x.m.name.toLowerCase().includes(q));
+  return `<div class="card noprint">
+    <div class="row">
+      <input style="flex:1" placeholder="Search" value="${esc(window._q||"")}" oninput="window._q=this.value;render()"/>
+      <select style="max-width:180px" onchange="window._flt=this.value;render()">
+        <option value="active" ${filter==="active"?"selected":""}>Active</option>
+        <option value="all" ${filter==="all"?"selected":""}>All names</option>
+        <option value="ok">Cleared</option>
+        <option value="wait">Grace</option>
+        <option value="no">Not entitled</option>
+      </select>
+    </div></div>
+    <div class="card" style="overflow:auto">
+    <table><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Paid</th><th>Remaining</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows.map((x,i)=>`<tr>
+      <td>${i+1}</td>
+      <td style="color:${x.code==='no'?'var(--red)':x.code==='wait'?'var(--amber)':x.code==='inactive'?'#777':'var(--green)'};font-weight:700">${esc(x.m.name)}</td>
+      <td>${esc(x.m.role)}</td>
+      <td>${ugx(x.m.paid)}</td>
+      <td>${ugx(x.remaining)}</td>
+      <td><span class="pill ${x.code==='ok'?'ok':x.code==='wait'?'wait':x.code==='no'?'no':'offp'}">${x.label}</span></td>
+      <td><button class="btn ghost" onclick="showStmt(${x.m.id})">Statement</button></td>
+    </tr>`).join("")}</tbody></table></div>
+    <div id="stmtBox"></div>`;
+}
+function showStmt(id){
+  const m=DB.members.find(x=>x.id===id);
+  document.getElementById("stmtBox").innerHTML=`<div class="card"><h3>Statement · ${esc(m.name)}</h3>
+    <table><thead><tr><th>When</th><th>Note</th><th>Amount</th></tr></thead>
+    <tbody>${(m.tx||[]).map(t=>`<tr><td>${esc(t.at).slice(0,16)}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>No lines</td></tr>"}</tbody></table></div>`;
+}
+
+function payView(){
+  const names=DB.members.filter(m=>m.active).map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  return `<div class="card">
+    <h3>Record money</h3>
+    <label>Member</label><select id="payId">${names}</select>
+    <label>Amount (UGX)</label><input id="payAmt" type="number" value="10000"/>
+    <label>Note</label><input id="payNote" value="Monthly contribution"/>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="doPay(1)">Add payment</button>
+      <button class="btn ghost" onclick="doPay(-1)">Reduce / correct</button>
+    </div>
+  </div>`;
+}
+function doPay(sign){
+  if(!needPin()) return;
+  const id=Number(document.getElementById("payId").value);
+  const amt=Number(document.getElementById("payAmt").value||0);
+  const note=document.getElementById("payNote").value|| (sign>0?"Payment":"Correction");
+  if(amt<=0){ alert("Enter amount"); return; }
+  const m=DB.members.find(x=>x.id===id);
+  m.paid=Math.max(0,(m.paid||0)+sign*amt);
+  m.tx=m.tx||[];
+  m.tx.push({type:note,amount:sign*amt,at:new Date().toISOString()});
+  save(); alert(m.name+" is now at "+ugx(m.paid)); render();
+}
+
+function chatView(isTreas){
+  const people=["Everyone","Treasurer","Chairperson","Secretary"].concat(DB.members.filter(m=>m.active).map(m=>m.name));
+  const summary=summarizeChat();
+  return `${isTreas?`<div class="card"><h3>Digest for treasurer</h3>${summary}
+    <p style="color:var(--muted);font-size:.82rem">You see tagged money / benefit / complaint lines. Social chat stays in the room below.</p></div>`:""}
+  <div class="card">
+    <h3>${isTreas?"Association room":"Talk to members and officials"}</h3>
+    <label>Your name</label><input id="chatFrom" placeholder="Full name as on the register"/>
+    <label>Send to</label><select id="chatTo">${people.map(p=>`<option>${esc(p)}</option>`).join("")}</select>
+    <label>Message</label><textarea id="chatText" rows="3" placeholder="Balances, benefits, meetings…"></textarea>
+    <button class="btn gold" style="margin-top:8px" onclick="postChat()">Post</button>
+  </div>
+  <div class="card chatlog">${DB.chat.slice().reverse().map(c=>`
+    <div class="bubble ${c.role==='system'?'official':''}">
+      <div class="tag">${esc(c.to||"Everyone")} · ${tagMsg(c.text)}</div>
+      <b>${esc(c.from)}</b> <small>${new Date(c.at).toLocaleString()}</small>
+      <div>${esc(c.text)}</div>
+    </div>`).join("")}</div>`;
+}
+function summarizeChat(){
+  const human=DB.chat.filter(c=>c.role!=="system");
+  const bags={payment:0,benefit:0,complaint:0,social:0};
+  human.forEach(c=>bags[tagMsg(c.text)]++);
+  const flagged=human.filter(c=>tagMsg(c.text)!=="social").slice(-6).reverse();
+  return `<p><b>${human.length}</b> member messages · payments ${bags.payment} · benefits ${bags.benefit} · complaints ${bags.complaint} · other ${bags.social}</p>
+    ${flagged.map(c=>`<div>• <b>${esc(c.from)}</b> → ${esc(c.to)} <span class="pill wait">${tagMsg(c.text)}</span> ${esc(c.text)}</div>`).join("")||"<p>No flagged messages yet.</p>"}`;
+}
+function postChat(){
+  const from=(document.getElementById("chatFrom").value||"").trim();
+  const to=document.getElementById("chatTo").value;
+  const text=(document.getElementById("chatText").value||"").trim();
+  if(!from||!text){ alert("Name and message required"); return; }
+  DB.chat.push({from,to,text,at:new Date().toISOString(),role:"member"});
+  save(); render();
+}
+
+function expView(collected,spent){
+  return `<div class="card">
+    <h3>Money out</h3>
+    <p>In ${ugx(collected)} · Out ${ugx(spent)} · Balance <b>${ugx(collected-spent)}</b></p>
+    <label>Item</label><input id="exItem"/>
+    <label>Amount</label><input id="exAmt" type="number"/>
+    <label>C/O</label><input id="exBy"/>
+    <button class="btn gold" style="margin-top:8px" onclick="addExp()">Add expense</button>
+  </div>
+  <div class="card" style="overflow:auto"><table><thead><tr><th>Date</th><th>Item</th><th>Amount</th><th>C/O</th></tr></thead>
+  <tbody>${DB.expenses.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}</td><td>${ugx(e.amount)}</td><td>${esc(e.by)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function addExp(){
+  if(!needPin()) return;
+  const item=document.getElementById("exItem").value.trim();
+  const amount=Number(document.getElementById("exAmt").value||0);
+  const by=document.getElementById("exBy").value.trim();
+  if(!item||amount<=0){ alert("Need item and amount"); return; }
+  DB.expenses.push({item,amount,by,date:new Date().toISOString().slice(0,10)});
+  save(); render();
+}
+
+function flyerView(st){
+  const list=st.filter(x=>x.m.active).sort((a,b)=>a.remaining-b.remaining);
+  const mid=Math.ceil(list.length/2);
+  const col=arr=>arr.map(x=>`<div class="flyer-row" style="color:${x.code==='no'?'#ffb4ab':x.code==='wait'?'#f5c15c':'#86efac'}"><span>${esc(x.m.name)}</span><span>${ugx(x.remaining)}</span></div>`).join("");
+  return `<div class="noprint row" style="margin-bottom:10px">
+    <button class="btn gold" onclick="window.print()">Print / Save PDF</button>
+  </div>
+  <div class="flyer-wrap"><div class="flyer">
+    <h2>MUST GRADUATES 2017 TRUST FUND</h2>
+    <div class="sub">Outstanding contribution balances · 2025 / 2026<br>Email ${EMAIL}<br>Clear to Stanbic A/C ${BANK}</div>
+    <div class="flyer-grid"><div>${col(list.slice(0,mid))}</div><div>${col(list.slice(mid))}</div></div>
+    <p class="sub" style="margin-top:16px">Green entitled · Gold in grace · Red not entitled<br>
+    Active members ${list.length} · still due ${ugx(list.reduce((s,x)=>s+x.remaining,0))} UGX</p>
+  </div></div>`;
+}
+
+function backupView(){
+  return `<div class="card">
+    <h3>Database</h3>
+    <p><b>Internal:</b> saved in this browser (works offline).</p>
+    <p><b>External:</b> download JSON and keep it on Google Drive or email ${EMAIL}.</p>
+    <div class="row">
+      <button class="btn gold" onclick="downloadBackup()">Download backup</button>
+      <button class="btn ghost" onclick="document.getElementById('imp').click()">Import backup</button>
+      <input id="imp" type="file" accept="application/json" class="hidden" onchange="importBackup(event)"/>
+      <button class="btn danger" onclick="resetSeed()">Reset to Excel snapshot</button>
+    </div>
+    <label>New PIN</label><input id="newPin" placeholder="At least 4 characters"/>
+    <button class="btn ghost" style="margin-top:8px" onclick="changePin()">Save PIN</button>
+  </div>`;
+}
+function downloadBackup(){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,2)],{type:"application/json"}));
+  a.download="MUST-2017-Trust-Fund-backup.json"; a.click();
+}
+function importBackup(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ DB=JSON.parse(r.result); save(); alert("Imported"); render(); };
+  r.readAsText(f);
+}
+function resetSeed(){
+  if(!needPin()) return;
+  if(!confirm("Replace live data with the original Excel snapshot?")) return;
+  localStorage.removeItem(KEY); DB=seed(); save(); render();
+}
+function changePin(){
+  if(!needPin()) return;
+  const n=document.getElementById("newPin").value.trim();
+  if(n.length<4){ alert("Use at least 4 characters"); return; }
+  DB.pin=n; save(); alert("PIN changed");
+}
+render();
+</script>
+</body>
+</html>
