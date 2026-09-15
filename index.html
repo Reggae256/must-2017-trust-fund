@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#0b0b0b"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>MUST Graduates 2017 Trust Fund</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#0b0b0b; --panel:#141414; --card:#1a1a1a; --line:#2a2a2a;
@@ -23,7 +23,18 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:18px 20px;background:
   radial-gradient(800px 200px at 10% -20%, rgba(212,175,55,.18), transparent),
   linear-gradient(180deg,#161616,#101010);border:1px solid #2c2618;border-radius:22px}
-.crest{width:64px;height:64px;flex:none}
+.crest{width:78px;height:78px;flex:none}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:grid;place-items:center;z-index:40;padding:16px}
+.modal .box{background:#161616;border:1px solid #3a3322;border-radius:16px;padding:16px;max-width:720px;width:100%;max-height:86vh;overflow:auto}
+.chart{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin:4px 0}
+.dot{width:10px;height:10px;border-radius:50%}
+.photo{width:72px;height:72px;border-radius:12px;object-fit:cover;border:2px solid var(--gold);background:#111}
+.flyer{background:#111;color:#fff;border:8px solid var(--gold);padding:10px 12px;font-size:.72rem}
+.flyer h2{margin:0;text-align:center;color:var(--gold);font-size:1.05rem}
+.flyer .sub{text-align:center;color:#ddd;margin:4px 0 8px;font-size:.7rem}
+.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+.flyer-row{display:grid;grid-template-columns:22px 1fr 70px;gap:4px;padding:2px 6px;background:#1c1810}
 .brand h1{margin:0;font-size:clamp(1.35rem,3vw,2rem);color:var(--gold2);letter-spacing:.02em}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
 .mode{display:flex;background:#000;border:1px solid #333;border-radius:999px;overflow:hidden}
@@ -87,15 +98,34 @@ footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
 <div class="app">
   <div class="top">
     <div class="row" style="align-items:center">
-      <svg class="crest" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="47" fill="none" stroke="#d4af37" stroke-width="3"/>
-        <rect x="26" y="24" width="24" height="24" fill="#003399"/>
-        <rect x="50" y="24" width="24" height="24" fill="#d4af37"/>
-        <rect x="26" y="48" width="24" height="24" fill="#d4af37"/>
-        <rect x="50" y="48" width="24" height="24" fill="#003399"/>
-        <rect x="26" y="24" width="48" height="48" fill="none" stroke="#f3e2a5" stroke-width="1.5"/>
-        <rect x="20" y="76" width="60" height="14" fill="#d4af37"/>
-        <text x="50" y="86" text-anchor="middle" font-size="6.2" font-family="Arial" font-weight="700">SUCCEED WE MUST</text>
+      <svg class="crest" viewBox="0 0 200 200" aria-label="MUST badge">
+        <circle cx="100" cy="100" r="98" fill="#fff"/>
+        <text transform="rotate(-90 22 100)" x="22" y="104" fill="#1e3a8a" font-size="9" font-family="Arial" font-weight="700">MBARARA</text>
+        <path d="M38,42 A62,62 0 0,1 162,42" fill="none"/>
+        <text fill="#1e3a8a" font-size="8.2" font-family="Arial" font-weight="700" text-anchor="middle">
+          <textPath href="#arc" startOffset="50%">UNIVERSITY OF SCIENCE AND TECHNOLOGY</textPath>
+        </text>
+        <path id="arc" d="M28,92 A72,72 0 0,1 172,92" fill="none"/>
+        <text fill="#1e3a8a" font-size="7.4" font-family="Arial" font-weight="700">
+          <textPath href="#arc" startOffset="7%">UNIVERSITY OF SCIENCE AND TECHNOLOGY</textPath>
+        </text>
+        <rect x="88" y="28" width="24" height="16" fill="none" stroke="#111" stroke-width="2"/>
+        <line x1="100" y1="28" x2="100" y2="44" stroke="#111" stroke-width="2"/>
+        <path d="M70 48 L100 40 L130 48 L130 108 Q100 128 70 108 Z" fill="#1e3a8a" stroke="#111"/>
+        <rect x="72" y="52" width="27" height="26" fill="#1e3a8a"/>
+        <rect x="101" y="52" width="27" height="26" fill="#eab308"/>
+        <rect x="72" y="80" width="27" height="26" fill="#eab308"/>
+        <rect x="101" y="80" width="27" height="26" fill="#1e3a8a"/>
+        <circle cx="85" cy="64" r="7" fill="none" stroke="#fff" stroke-width="1.6"/>
+        <line x1="90" y1="69" x2="96" y2="74" stroke="#fff" stroke-width="1.6"/>
+        <circle cx="115" cy="65" r="6" fill="none" stroke="#111" stroke-width="1.4"/>
+        <circle cx="86" cy="93" r="7" fill="none" stroke="#111" stroke-width="1.4"/>
+        <line x1="86" y1="86" x2="86" y2="100" stroke="#111"/>
+        <line x1="79" y1="93" x2="93" y2="93" stroke="#111"/>
+        <path d="M115 86 c0 10 0 16 0 20" stroke="#fff" fill="none" stroke-width="1.6"/>
+        <path d="M110 92 q5 6 10 0" stroke="#fff" fill="none"/>
+        <path d="M48 118 Q100 148 152 118" fill="#eab308"/>
+        <text x="100" y="136" text-anchor="middle" font-size="8" font-family="Arial" font-weight="700">SUCCEED WE MUST</text>
       </svg>
       <div class="brand">
         <h1>MUST Graduates 2017 Trust Fund</h1>
@@ -107,11 +137,12 @@ footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
   <div class="stats" id="stats"></div>
   <div class="nav noprint" id="nav"></div>
   <div id="view"></div>
-  <footer class="noprint">Free volunteer tool · data stays on this device until you export · default treasurer PIN <b>2017</b> · Add to Home Screen for an app icon</footer>
+  <footer class="noprint">MUST Education Graduates 2017 · Stanbic 9030026155907</footer>
+  <div id="modal"></div>
 </div>
 
 <script>
-const SEED_MEMBERS = [{"name":"Bankunda Aron","fee":10000,"active":true,"paid":240000,"phone":"256756870201","role":"Chairperson","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Arinda Jackline","fee":10000,"active":true,"paid":240000,"phone":"256786028722","role":"Vice Chairperson","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Atwine Onesmus","fee":10000,"active":true,"paid":120000,"phone":"256773512742","role":"Secretary","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Atuha Reggae","fee":10000,"active":true,"paid":240000,"phone":"256777649497","role":"Treasurer","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Anyama Fred","fee":10000,"active":true,"paid":100000,"phone":"256773512742","role":"PRO","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000}},{"name":"Ssenkayi John Baptist","fee":10000,"active":true,"paid":120000,"phone":"256778956611","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Mubinga Ivan","fee":10000,"active":true,"paid":130000,"phone":"256751732553","role":"Member","months":{"Jan":20000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Twinoburyo Allan","fee":10000,"active":true,"paid":120000,"phone":"256759484343","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Evan Muhimbise","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Senyonjo Amos","fee":10000,"active":true,"paid":30000,"phone":"256784256956","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000}},{"name":"Okello George","fee":10000,"active":true,"paid":120000,"phone":"256783957249","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Wandira Aggrey","fee":10000,"active":true,"paid":240000,"phone":"256778461179","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Asaba Stephen","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ssemujju Edward","fee":10000,"active":true,"paid":240000,"phone":"","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Mbaziira Emmy Muhammed","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Mwine Job K","fee":10000,"active":true,"paid":240000,"phone":"256778878786","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Arthur Peterson Komugisa","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ahimbisibwe Isaac","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nuwahereza Levious","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"BRIGHTON Mugumya","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Simon Atukwatse","fee":10000,"active":true,"paid":240000,"phone":"256705160424","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Arnold Tweteitse","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Tukundane Alex","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Domiano Turyatunga","fee":10000,"active":true,"paid":60000,"phone":"256778667713","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000}},{"name":"Lukumbi Cymon Peter","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kasakya Jonah","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Chemonges John Paul","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Besigye John Benzene","fee":10000,"active":true,"paid":200000,"phone":"256789646467","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Mulokwa Fred","fee":10000,"active":true,"paid":30000,"phone":"256772561115","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000}},{"name":"Majariti Nathan","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nuwamanya innocent","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Turyahabwe Julius","fee":10000,"active":true,"paid":60000,"phone":"256705912490","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000}},{"name":"Nuwarinda Osbert","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Baguma Paul","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Manigamukama Onan","fee":10000,"active":true,"paid":240000,"phone":"256771211619","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Nabakooza Peace","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ampaire Jackson","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Natukwatsa Felix","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nalugo Immaculate","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Twijukye paddy.","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Muhumuza Raymond","fee":10000,"active":true,"paid":120000,"phone":"256757356608","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Luswata David","fee":10000,"active":true,"paid":0,"phone":"256787508218","role":"Member","months":{}},{"name":"Turyasingura Mathias","fee":10000,"active":true,"paid":240000,"phone":"256771214820","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Nakafeero Salma","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Ayesigye Irene","fee":10000,"active":true,"paid":240000,"phone":"256772579033","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":20000,"Aug":20000,"Sep":20000,"Oct":20000,"Nov":20000,"Dec":20000}},{"name":"Munezero Urban","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kadambi Joel","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Muteganda Shepherd","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Muloogi Derick","fee":10000,"active":true,"paid":0,"phone":"256752035901","role":"Member","months":{}},{"name":"Obore Charles","fee":10000,"active":true,"paid":0,"phone":"256787199745","role":"Member","months":{}},{"name":"Kanyesigye Paul","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Arinaitwe Doreen","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Nuwagaba Gabriel","fee":10000,"active":true,"paid":180000,"phone":"256758530322","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":20000,"Jun":20000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Kirega Ivan","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kato Andrew Francis","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kamugisha Alex","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Tukamuheebwa Crispus","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Byaruhanga Florence","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Kyempeire Ignatius","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Karugaba Benjamin","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Katwesigye Benson","fee":10000,"active":true,"paid":130000,"phone":"256782180838","role":"Member","months":{"Jan":20000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Aryaija Neriah","fee":10000,"active":true,"paid":160000,"phone":"256756560194","role":"Member","months":{"Jan":20000,"Feb":20000,"Mar":20000,"Apr":20000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Zemei Zirya","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Daisy Namirembe","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Mujinya Julius","fee":0,"active":false,"paid":0,"phone":"","role":"Member","months":{}},{"name":"Alira Daniel","fee":10000,"active":true,"paid":130000,"phone":"256789944424","role":"Member","months":{"Jan":20000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Muhairwe Godwin","fee":10000,"active":true,"paid":120000,"phone":"256703271366","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}},{"name":"Kato Andrew","fee":10000,"active":true,"paid":120000,"phone":"256753263303","role":"Member","months":{"Jan":10000,"Feb":10000,"Mar":10000,"Apr":10000,"May":10000,"Jun":10000,"Jul":10000,"Aug":10000,"Sep":10000,"Oct":10000,"Nov":10000,"Dec":10000}}];
+const SEED_MEMBERS = [{"name": "Bankunda Aron", "fee": 10000, "active": true, "paid": 240000, "phone": "256756870201", "role": "Chairperson", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Arinda Jackline", "fee": 10000, "active": true, "paid": 240000, "phone": "256786028722", "role": "Vice Chairperson", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Atwine Onesmus", "fee": 10000, "active": true, "paid": 120000, "phone": "256773512742", "role": "Secretary", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Atuha Reggae", "fee": 10000, "active": true, "paid": 240000, "phone": "256777649497", "role": "Treasurer", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Anyama Fred", "fee": 10000, "active": true, "paid": 100000, "phone": "256773512742", "role": "PRO", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000}}, {"name": "Ssenkayi John Baptist", "fee": 10000, "active": true, "paid": 120000, "phone": "256778956611", "role": "Member", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Mubinga Ivan", "fee": 10000, "active": true, "paid": 130000, "phone": "256751732553", "role": "Member", "months": {"Jan": 20000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Twinoburyo Allan", "fee": 10000, "active": true, "paid": 120000, "phone": "256759484343", "role": "Member", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Evan Muhimbise", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Senyonjo Amos", "fee": 10000, "active": true, "paid": 170000, "phone": "256784256956", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Okello George", "fee": 10000, "active": true, "paid": 360000, "phone": "256783957249", "role": "Member", "months": {"Jan": 30000, "Feb": 30000, "Mar": 30000, "Apr": 30000, "May": 30000, "Jun": 30000, "Jul": 30000, "Aug": 30000, "Sep": 30000, "Oct": 30000, "Nov": 30000, "Dec": 30000}}, {"name": "Wandira Aggrey", "fee": 10000, "active": true, "paid": 240000, "phone": "256778461179", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Asaba Stephen", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Ssemujju Edward", "fee": 10000, "active": true, "paid": 240000, "phone": "", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Mbaziira Emmy Muhammed", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Mwine Job K", "fee": 10000, "active": true, "paid": 240000, "phone": "256778878786", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Arthur Peterson Komugisa", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Ahimbisibwe Isaac", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Nuwahereza Levious", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "BRIGHTON Mugumya", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Simon Atukwatse", "fee": 10000, "active": true, "paid": 240000, "phone": "256705160424", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Arnold Tweteitse", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Tukundane Alex", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Domiano Turyatunga", "fee": 10000, "active": true, "paid": 60000, "phone": "256778667713", "role": "Member", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000}}, {"name": "Lukumbi Cymon Peter", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Kasakya Jonah", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Chemonges John Paul", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Besigye John Benzene", "fee": 10000, "active": true, "paid": 200000, "phone": "256789646467", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Mulokwa Fred", "fee": 10000, "active": true, "paid": 30000, "phone": "256772561115", "role": "Member", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000}}, {"name": "Majariti Nathan", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Nuwamanya innocent", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Turyahabwe Julius", "fee": 10000, "active": true, "paid": 60000, "phone": "256705912490", "role": "Member", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000}}, {"name": "Nuwarinda Osbert", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Baguma Paul", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Manigamukama Onan", "fee": 10000, "active": true, "paid": 240000, "phone": "256771211619", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Nabakooza Peace", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Ampaire Jackson", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Natukwatsa Felix", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Nalugo Immaculate", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Twijukye paddy.", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Muhumuza Raymond", "fee": 10000, "active": true, "paid": 120000, "phone": "256757356608", "role": "Member", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Luswata David", "fee": 10000, "active": true, "paid": 0, "phone": "256787508218", "role": "Member", "months": {}}, {"name": "Turyasingura Mathias", "fee": 10000, "active": true, "paid": 240000, "phone": "256771214820", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Nakafeero Salma", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Ayesigye Irene", "fee": 10000, "active": true, "paid": 240000, "phone": "256772579033", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Munezero Urban", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Kadambi Joel", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Muteganda Shepherd", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Muloogi Derick", "fee": 10000, "active": true, "paid": 0, "phone": "256752035901", "role": "Member", "months": {}}, {"name": "Obore Charles", "fee": 10000, "active": true, "paid": 0, "phone": "256787199745", "role": "Member", "months": {}}, {"name": "Kanyesigye Paul", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Arinaitwe Doreen", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Nuwagaba Gabriel", "fee": 10000, "active": true, "paid": 180000, "phone": "256758530322", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Kirega Ivan", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Kato Andrew Francis", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Kamugisha Alex", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Tukamuheebwa Crispus", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Byaruhanga Florence", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Kyempeire Ignatius", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Karugaba Benjamin", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Katwesigye Benson", "fee": 10000, "active": true, "paid": 240000, "phone": "256782180838", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Aryaija Neriah", "fee": 10000, "active": true, "paid": 160000, "phone": "256756560194", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Zemei Zirya", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Daisy Namirembe", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Mujinya Julius", "fee": 0, "active": false, "paid": 0, "phone": "", "role": "Member", "months": {}}, {"name": "Alira Daniel", "fee": 10000, "active": true, "paid": 130000, "phone": "256789944424", "role": "Member", "months": {"Jan": 20000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}, {"name": "Muhairwe Godwin", "fee": 10000, "active": true, "paid": 240000, "phone": "256703271366", "role": "Member", "months": {"Jan": 20000, "Feb": 20000, "Mar": 20000, "Apr": 20000, "May": 20000, "Jun": 20000, "Jul": 20000, "Aug": 20000, "Sep": 20000, "Oct": 20000, "Nov": 20000, "Dec": 20000}}, {"name": "Kato Andrew", "fee": 10000, "active": true, "paid": 120000, "phone": "256753263303", "role": "Member", "months": {"Jan": 10000, "Feb": 10000, "Mar": 10000, "Apr": 10000, "May": 10000, "Jun": 10000, "Jul": 10000, "Aug": 10000, "Sep": 10000, "Oct": 10000, "Nov": 10000, "Dec": 10000}}];
 const SEED_EXPENSES = [
   {item:"Registration and opening account", date:"2025-04-01", amount:528200, by:"Executive"},
   {item:"Transport x2 mobile banking / FlexiPay", date:"2025-04-15", amount:16000, by:"Treasurer"},
@@ -119,35 +150,62 @@ const SEED_EXPENSES = [
   {item:"Refund to Julius Turyahabwe", date:"2026-05-05", amount:47500, by:"Julius"},
   {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias"}
 ];
-const START=new Date(2025,0,1), MONTHLY=10000, CYCLE=240000, GRACE=4;
-const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust.v2";
+const START=new Date(2025,0,1), MONTHLY=10000, GRACE=4;
+const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust.v3";
 
+function defaultSettings(){
+  return {openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL};
+}
 function seed(){
   return {
     pin:"2017",
-    members: SEED_MEMBERS.map((m,i)=>({id:i+1,...m,tx:m.paid?[{type:"Opening balance from Excel",amount:m.paid,at:"2026-09-14"}]:[]})),
+    settings: defaultSettings(),
+    notices:[],
+    members: SEED_MEMBERS.map((m,i)=>({id:i+1,...m,photo:"",profile:{spouse:"",parents:"",siblings:"",phone2:"",submitted:false},tx:m.paid?[{type:"Opening balance from Excel",amount:m.paid,at:"2026-09-14"}]:[]})),
     expenses: SEED_EXPENSES.slice(),
     chat:[{from:"Trust Fund",to:"Everyone",text:"Welcome. Use this board for association matters. The treasurer sees a summary of money, benefits and complaints — not every greeting.",at:new Date().toISOString(),role:"system"}]
   };
 }
 function load(){
-  try{ const raw=localStorage.getItem(KEY); if(raw) return JSON.parse(raw);}catch(e){}
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){
+      const db=JSON.parse(raw);
+      db.settings = Object.assign(defaultSettings(), db.settings||{});
+      db.notices = db.notices||[];
+      (db.members||[]).forEach(m=>{ m.profile=m.profile||{spouse:"",parents:"",siblings:"",phone2:"",submitted:false}; });
+      return db;
+    }
+  }catch(e){}
   return seed();
 }
 let DB=load();
 function save(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
 
-function monthsElapsed(now){ return (now.getFullYear()-START.getFullYear())*12 + (now.getMonth()-START.getMonth()) + 1; }
+function monthsBetween(from, to){
+  return (to.getFullYear()-from.getFullYear())*12 + (to.getMonth()-from.getMonth()) + 1;
+}
+function billThroughDate(now){
+  const s=DB.settings||defaultSettings();
+  if(s.paused && s.pauseFrom){
+    const p=new Date(s.pauseFrom+"T00:00:00");
+    if(p<now) return p;
+  }
+  return now;
+}
+function monthsElapsed(now){ return Math.max(0, monthsBetween(START, billThroughDate(now))); }
 function classify(m, now){
   const elapsed=monthsElapsed(now);
-  const expectedNow=Math.min(elapsed,24)*MONTHLY;
-  const remaining=Math.max(0, CYCLE-(m.paid||0));
-  const behind=Math.max(0, expectedNow-(m.paid||0));
-  const monthsBehind=Math.ceil(behind/MONTHLY);
-  if(!m.active) return {code:"inactive",label:"Not registered",remaining,monthsBehind,expectedNow};
-  if(behind<=0) return {code:"ok",label:"Entitled · cleared",remaining,monthsBehind:0,expectedNow};
-  if(monthsBehind<=GRACE) return {code:"wait",label:"Entitled · in grace",remaining,monthsBehind,expectedNow};
-  return {code:"no",label:"Not entitled",remaining,monthsBehind,expectedNow};
+  const expectedNow=elapsed*MONTHLY;
+  const paid=m.paid||0;
+  const remaining=Math.max(0, expectedNow-paid);
+  const prepaid=Math.max(0, paid-expectedNow);
+  const monthsBehind=Math.ceil(remaining/MONTHLY);
+  const monthsAhead=Math.floor(prepaid/MONTHLY);
+  if(!m.active) return {code:"inactive",label:"Not registered",remaining:expectedNow,monthsBehind:elapsed,expectedNow,prepaid:0,monthsAhead:0};
+  if(remaining<=0) return {code:"ok",label:monthsAhead?("Entitled · prepaid "+monthsAhead+" mo"):"Entitled · up to date",remaining:0,monthsBehind:0,expectedNow,prepaid,monthsAhead};
+  if(monthsBehind<=GRACE) return {code:"wait",label:"Entitled · in grace",remaining,monthsBehind,expectedNow,prepaid:0,monthsAhead:0};
+  return {code:"no",label:"Not entitled",remaining,monthsBehind,expectedNow,prepaid:0,monthsAhead:0};
 }
 function ugx(n){ return Number(n||0).toLocaleString("en-UG"); }
 function wa(phone,text){
@@ -163,51 +221,50 @@ function tagMsg(t){
   return "social";
 }
 
-let mode="member", tab="home", authed=false, who=localStorage.getItem("must2017.who")||"";
+let mode="member", tab="home", authed=false, who="";
 const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["chat","Chat"],["expenses","Expenses"],["flyer","Flyer"],["backup","Backup"]];
-const TABS_M=[["home","My status"],["chat","Chat"],["flyer","Balances"],["people","Executive"]];
+const TABS_M=[["home","My status"],["spend","Fund money"],["profile","My details"],["note","Write to treasurer"]];
 
 function needPin(){
   if(authed) return true;
-  const p=prompt("Treasurer PIN (default 2017)");
-  if(p===DB.pin){ authed=true; return true; }
-  alert("Wrong PIN"); return false;
+  openModal(`<h3>Treasurer login</h3>
+    <label>PIN</label><input id="pinBox" type="password"/>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="tryPin()">Login</button>
+      <button class="btn ghost" onclick="forgotPin()">Forgot PIN</button>
+    </div>`);
+  return false;
 }
-
-function doLogin(){
-  const v=(document.getElementById("loginName").value||"").trim();
-  if(!v){ alert("Type your full name"); return; }
-  const m=DB.members.find(x=>x.name.toLowerCase()===v.toLowerCase());
-  if(!m){ alert("That name is not on the register. Check the spelling or contact the treasurer."); return; }
-  who=m.name; localStorage.setItem("must2017.who", who);
-  render();
+function tryPin(){
+  const p=document.getElementById("pinBox").value;
+  if(p===DB.pin){ authed=true; closeModal(); render(); }
+  else alert("Wrong PIN");
 }
-function logout(){
-  who=""; localStorage.removeItem("must2017.who");
-  mode="member"; tab="home"; render();
+function forgotPin(){
+  openModal(`<h3>Reset PIN</h3>
+    <p>Enter the registered email (${esc(DB.settings.recoveryEmail||EMAIL)}).</p>
+    <input id="emBox" placeholder="Email"/>
+    <label>New PIN</label><input id="npBox" type="password"/>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="resetPin()">Reset PIN</button>
+    </div>`);
 }
-function loginGate(){
-  return `<div class="gate"><div class="gate-box">
-    <h2 style="margin:0 0 6px;color:var(--gold2)">Member Login</h2>
-    <p style="color:var(--muted);font-size:.9rem">Find your name on the register to see your own balance and updates.</p>
-    <label>Your full name</label>
-    <input list="nmLogin" id="loginName" placeholder="Start typing your name" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <datalist id="nmLogin">${DB.members.map(m=>`<option value="${esc(m.name)}">`).join("")}</datalist>
-    <button class="btn gold" style="margin-top:12px;width:100%" onclick="doLogin()">Continue</button>
-  </div></div>`;
+function resetPin(){
+  const em=(document.getElementById("emBox").value||"").trim().toLowerCase();
+  const np=(document.getElementById("npBox").value||"").trim();
+  if(em!==String(DB.settings.recoveryEmail||EMAIL).toLowerCase()){ alert("Email does not match the registered address."); return; }
+  if(np.length<4){ alert("PIN must be 4+ characters"); return; }
+  DB.pin=np; save(); authed=true; closeModal(); alert("PIN reset"); render();
 }
+function openModal(html){
+  document.getElementById("modal").innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="box">${html}<div class="row" style="margin-top:10px"><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div>`;
+}
+function closeModal(){ document.getElementById("modal").innerHTML=""; }
 
 function render(){
   document.getElementById("modeSwitch").innerHTML =
     `<button class="${mode==='member'?'on':''}" onclick="mode='member';tab='home';render()">Member</button>
-     <button class="${mode==='treasurer'?'on':''}" onclick="if(needPin()){mode='treasurer';tab='home';render()}">Treasurer</button>`
-     + (mode==="member"&&who?`<span style="align-self:center;margin-left:10px;color:var(--muted);font-size:.8rem">Logged in as <b style="color:var(--gold2)">${esc(who)}</b> · <a href="#" onclick="logout();return false;" style="color:var(--gold)">switch</a></span>`:"");
-  if(mode==="member" && !who){
-    document.getElementById("stats").innerHTML="";
-    document.getElementById("nav").innerHTML="";
-    document.getElementById("view").innerHTML=loginGate();
-    return;
-  }
+     <button class="${mode==='treasurer'?'on':''}" onclick="if(needPin()){mode='treasurer';tab='home';render()}">Treasurer</button>`;
   const now=new Date();
   const active=DB.members.filter(m=>m.active);
   const st=active.map(m=>({m,...classify(m,now)}));
@@ -215,10 +272,10 @@ function render(){
   const collected=DB.members.reduce((s,m)=>s+(m.paid||0)+(m.fee||0),0);
   const spent=DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
   document.getElementById("stats").innerHTML = `
-    <div class="stat"><b>${active.length}</b><span>Active members</span></div>
-    <div class="stat"><b>${st.filter(x=>x.code==='ok'||x.code==='wait').length}</b><span>Entitled today</span></div>
-    <div class="stat"><b>${ugx(due)}</b><span>Still to collect (cycle)</span></div>
-    <div class="stat"><b>${ugx(collected-spent)}</b><span>Books balance</span></div>`;
+    <div class="stat"><b>${ugx(collected)}</b><span>Money collected</span></div>
+    <div class="stat"><b>${ugx(due)}</b><span>Still to collect</span></div>
+    <div class="stat"><b>${ugx(spent)}</b><span>Money spent</span></div>
+    <div class="stat"><b>${ugx(collected-spent)}</b><span>Account balance</span></div>`;
   const tabs = mode==="treasurer"?TABS_T:TABS_M;
   document.getElementById("nav").innerHTML = tabs.map(([id,label])=>
     `<button class="${tab===id?'on':''}" onclick="tab='${id}';render()">${label}</button>`
@@ -226,9 +283,9 @@ function render(){
   const v=document.getElementById("view");
   if(mode==="member"){
     if(tab==="home") v.innerHTML=memberHome(st);
-    if(tab==="chat") v.innerHTML=chatView(false);
-    if(tab==="flyer") v.innerHTML=flyerView(st);
-    if(tab==="people") v.innerHTML=peopleView();
+    if(tab==="spend") v.innerHTML=fundView(collected,spent,due);
+    if(tab==="profile") v.innerHTML=profileView();
+    if(tab==="note") v.innerHTML=memberNoteView();
   } else {
     if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
     if(tab==="members") v.innerHTML=membersView();
@@ -241,41 +298,145 @@ function render(){
 }
 
 function memberHome(st){
-  const found = who ? st.concat(DB.members.filter(m=>!m.active).map(m=>({m,...classify(m,new Date())}))).find(x=>x.m.name.toLowerCase()===who.toLowerCase()) : null;
+  const found = who ? DB.members.map(m=>({m,...classify(m,new Date())})).find(x=>x.m.name.toLowerCase()===who.toLowerCase()) : null;
+  const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
-    return `<div class="card"><h3>We can't find your record</h3>
-      <p style="color:var(--muted)">Your name isn't on the current register. Contact the treasurer, or <a href="#" onclick="logout();return false;" style="color:var(--gold)">switch name</a>.</p></div>`;
+    return `<div class="card"><h3>Open your record</h3>
+      <p>Type your name exactly as on the register. You will only see your own balance.</p>
+      <input list="nm" id="whoBox" placeholder="Your full name"/>
+      <datalist id="nm">${names}</datalist>
+      <div class="row" style="margin-top:10px">
+        <button class="btn gold" onclick="who=document.getElementById('whoBox').value.trim();render()">Open my status</button>
+      </div>
+    </div>`;
   }
-  const pct=Math.min(100, Math.round((found.m.paid||0)/CYCLE*100));
-  let card=`<div class="card">
-    <h3>${esc(found.m.name)}</h3>
-    <span class="pill ${found.code==='ok'?'ok':found.code==='wait'?'wait':found.code==='no'?'no':'offp'}">${found.label}</span>
-    <p>Paid <b>${ugx(found.m.paid)}</b> of ${ugx(CYCLE)} · remaining <b>${ugx(found.remaining)}</b>
-    ${found.monthsBehind?` · ${found.monthsBehind} month(s) behind`:""}</p>
-    <div class="progress"><i style="width:${pct}%"></i></div>
-    <p style="color:var(--muted);font-size:.85rem;margin:8px 0 0">Cycle Jan 2025 – Dec 2026 · 10,000 a month · 4 months grace including this month.</p>
-    <p>Pay to <b>Stanbic ${BANK}</b></p>
-    ${found.remaining>0?`<a class="btn wa" href="${wa(found.m.phone, `I have paid / I will clear UGX ${ugx(found.remaining)} to Stanbic ${BANK}.`)}">Tell treasurer on WhatsApp</a>`:""}
-  </div>`;
-  return card+noticesForMember(found.m.name);
-}
-function noticesForMember(name){
-  const lname=name.toLowerCase();
-  const items=DB.chat.filter(c=>{
-    const to=(c.to||"").toLowerCase();
-    const mine = to===lname || (c.from||"").toLowerCase()===lname;
-    const announcement = c.role==="system" && to==="everyone";
-    if(tagMsg(c.text)==="benefit") return mine; // benefit messages stay private, never shown as a general announcement
-    return mine || announcement;
-  }).slice(-8).reverse();
+  const pct=found.expectedNow?Math.min(100, Math.round((found.m.paid||0)/found.expectedNow*100)):0;
+  const notices=[];
+  if(found.code==="no") notices.push("You are beyond the 4-month grace. Clear to stay entitled to benefits.");
+  else if(found.code==="wait") notices.push("You are inside grace. Clear when you can so you stay entitled.");
+  else if(found.code==="ok") notices.push(found.monthsAhead?"You are prepaid. No payment is due this month.":"You are up to date.");
+  if(!found.m.active) notices.push("Membership fee is not on file. Speak to the treasurer to be registered.");
+  notices.push("Pay to Stanbic "+BANK+" · "+EMAIL);
   return `<div class="card">
-    <h3>Notices for you</h3>
-    ${items.length?items.map(c=>`<div class="bubble ${c.role==='system'?'official':''}" style="margin-bottom:8px">
-      <div class="tag">${esc(c.to||"Everyone")} · ${tagMsg(c.text)}</div>
-      <b>${esc(c.from)}</b> <small>${new Date(c.at).toLocaleString()}</small>
-      <div>${esc(c.text)}</div></div>`).join(""):"<p style='color:var(--muted)'>Nothing addressed to you yet.</p>"}
-    <p style="color:var(--muted);font-size:.8rem;margin:8px 0 0">Full discussion is in the Chat tab. To reach an official directly, open the Executive tab.</p>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="row" style="align-items:center">${found.m.photo?`<img class="photo" src="${found.m.photo}"/>`:""}
+        <h3 style="margin:0">${esc(found.m.name)}</h3></div>
+        <button class="btn ghost" onclick="who='';render()">Switch member</button>
+      </div>
+      <span class="pill ${found.code==='ok'?'ok':found.code==='wait'?'wait':found.code==='no'?'no':'offp'}">${found.label}</span>
+      <p>Your paid total <b>${ugx(found.m.paid)}</b></p>
+      <p>Expected to this month <b>${ugx(found.expectedNow)}</b></p>
+      <p>Your balance to clear now <b>${ugx(found.remaining)}</b>
+      ${found.monthsBehind?` · ${found.monthsBehind} month(s) behind`:""}
+      ${found.monthsAhead?` · prepaid ${found.monthsAhead} month(s)`:""}</p>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+    </div>
+    ${updatesBox(false)}
+    <div class="card"><h3>For you</h3>${notices.map(n=>`<p>${esc(n)}</p>`).join("")}</div>`;
+}
+function updatesBox(isExec){
+  const list=(DB.notices||[]).filter(n=>isExec || n.audience!=="exec").slice(-3).reverse();
+  let extra="";
+  if(isExec) extra=`<label>New update</label><textarea id="ntText" rows="2"></textarea>
+    <label>Who should see it</label>
+    <select id="ntAud"><option value="all">All members</option><option value="exec">Executives only</option></select>
+    <button class="btn gold" style="margin-top:8px" onclick="postNotice()">Publish update</button>`;
+  return `<div class="card"><h3>Latest updates</h3>
+    ${list.length?list.map(n=>`<p><small>${esc(n.at).slice(0,10)} · ${esc(n.from)}</small><br>${esc(n.text)}</p>`).join(""):"<p>No updates yet.</p>"}
+    ${extra}</div>`;
+}
+function postNotice(){
+  if(!needPin()) return;
+  const text=(document.getElementById("ntText").value||"").trim();
+  if(!text) return;
+  DB.notices=DB.notices||[];
+  DB.notices.push({text,from:"Executive",audience:document.getElementById("ntAud").value,at:new Date().toISOString()});
+  save(); render();
+}
+function pieSvg(collected,spent,due){
+  const t=Math.max(1,collected+spent+due);
+  const a1=collected/t, a2=spent/t, a3=due/t;
+  function arc(start,frac,color){
+    const s=start*2*Math.PI-Math.PI/2, e=(start+frac)*2*Math.PI-Math.PI/2;
+    const x1=50+40*Math.cos(s), y1=50+40*Math.sin(s);
+    const x2=50+40*Math.cos(e), y2=50+40*Math.sin(e);
+    const large=frac>0.5?1:0;
+    return `<path d="M50 50 L${x1} ${y1} A40 40 0 ${large} 1 ${x2} ${y2} Z" fill="${color}"/>`;
+  }
+  return `<div class="chart"><svg width="120" height="120" viewBox="0 0 100 100">${arc(0,a1,"#d4af37")}${arc(a1,a2,"#ff6b5a")}${arc(a1+a2,a3,"#3dd68c")}</svg>
+    <div class="legend">
+      <span><i class="dot" style="background:#d4af37"></i> Collected ${ugx(collected)}</span>
+      <span><i class="dot" style="background:#ff6b5a"></i> Spent ${ugx(spent)}</span>
+      <span><i class="dot" style="background:#3dd68c"></i> Still to collect ${ugx(due)}</span>
+    </div></div>`;
+}
+function fundView(collected,spent,due){
+  const year=new Date().getFullYear();
+  const yearExp=DB.expenses.filter(e=>String(e.date||"").startsWith(String(year)));
+  return `<div class="card"><h3>Association money</h3>
+    <p>Collected <b>${ugx(collected)}</b> · still to collect <b>${ugx(due)}</b> · spent <b>${ugx(spent)}</b> · account balance <b>${ugx(collected-spent)}</b></p>
+    ${pieSvg(collected,spent,due)}</div>
+    <div class="card"><h3>Expenditure ${year}</h3>
+    <table><thead><tr><th>Date</th><th>Item</th><th>Amount</th></tr></thead>
+    <tbody>${yearExp.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}</td><td>${ugx(e.amount)}</td></tr>`).join("")||"<tr><td colspan=3>None</td></tr>"}</tbody></table></div>`;
+}
+function profileView(){
+  if(!who) return `<div class="card"><p>Open My status first.</p></div>`;
+  const m=DB.members.find(x=>x.name.toLowerCase()===who.toLowerCase());
+  const p=m.profile||{};
+  return `<div class="card"><h3>Personal details</h3>
+    ${m.photo?`<img class="photo" src="${m.photo}"/>`:""}
+    <label>Passport photo</label><input type="file" accept="image/*" onchange="savePhoto(event)"/>
+    <label>Phone</label><input id="prPhone" value="${esc(m.phone||"")}"/>
+    <label>Second phone</label><input id="prPhone2" value="${esc(p.phone2||"")}"/>
+    <label>Spouse</label><input id="prSpouse" value="${esc(p.spouse||"")}"/>
+    <label>Parents</label><input id="prParents" value="${esc(p.parents||"")}"/>
+    <label>Siblings</label><input id="prSiblings" value="${esc(p.siblings||"")}"/>
+    <button class="btn gold" style="margin-top:8px" onclick="submitProfile()">Save and submit</button>
+    <p style="color:var(--muted);font-size:.8rem">Optional. After you submit, treasurer, chair and vice chair can see it.</p>
   </div>`;
+}
+function savePhoto(ev){
+  const f=ev.target.files[0]; if(!f||!who) return;
+  const r=new FileReader();
+  r.onload=()=>{ const m=DB.members.find(x=>x.name.toLowerCase()===who.toLowerCase()); m.photo=r.result; save(); render(); };
+  r.readAsDataURL(f);
+}
+function submitProfile(){
+  const m=DB.members.find(x=>x.name.toLowerCase()===who.toLowerCase()); if(!m) return;
+  m.phone=document.getElementById("prPhone").value.trim();
+  m.profile={
+    phone2:document.getElementById("prPhone2").value.trim(),
+    spouse:document.getElementById("prSpouse").value.trim(),
+    parents:document.getElementById("prParents").value.trim(),
+    siblings:document.getElementById("prSiblings").value.trim(),
+    submitted:true
+  };
+  save(); alert("Saved"); render();
+}
+function memberNoteView(){
+  if(!who){
+    return `<div class="card"><p>Open your status first so the treasurer knows who wrote.</p>
+      <button class="btn gold" onclick="tab='home';render()">Go to My status</button></div>`;
+  }
+  const mine=DB.chat.filter(c=>c.from.toLowerCase()===who.toLowerCase() && (c.to==="Treasurer"||c.private));
+  return `<div class="card">
+    <h3>Write to treasurer</h3>
+    <textarea id="chatText" rows="4" placeholder="Your message"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="postPrivateNote()">Send</button>
+    </div>
+  </div>
+  <div class="card"><h3>Your messages</h3>
+    ${mine.length?mine.slice().reverse().map(c=>`<div class="bubble"><small>${new Date(c.at).toLocaleString()}</small><div>${esc(c.text)}</div></div>`).join(""):"<p>None yet.</p>"}
+  </div>`;
+}
+function postPrivateNote(){
+  const text=(document.getElementById("chatText").value||"").trim();
+  if(!who||!text){ alert("Write a message"); return; }
+  const kind=tagMsg(text);
+  DB.chat.push({from:who,to:"Treasurer",text,at:new Date().toISOString(),role:"member",private:true,confidential:kind==="benefit"});
+  save(); alert("Sent"); render();
 }
 function peopleMini(){
   const officials=DB.members.filter(m=>m.role&&m.role!=="Member");
@@ -295,7 +456,15 @@ function treasHome(st,collected,spent){
   return `<div class="card">
     <h3>Treasurer desk</h3>
     <p>Collected fees + contributions <b>${ugx(collected)}</b> · spent <b>${ugx(spent)}</b> · balance <b>${ugx(collected-spent)}</b></p>
-    <p>Expected to this month: ${ugx(Math.min(monthsElapsed(new Date()),24)*MONTHLY)} per paying member. Entitled if not more than ${GRACE} months behind.</p>
+    ${pieSvg(collected,spent,st.reduce((s,x)=>s+x.remaining,0))}
+    ${updatesBox(true)}
+    <p>Expected to this month: <b>${ugx(monthsElapsed(new Date())*MONTHLY)}</b> per paying member (${monthsElapsed(new Date())} months since Jan 2025). Grace is ${GRACE} months.</p>
+    <p>${(DB.settings.paused)?"Contributions are <b>paused</b> from "+esc(DB.settings.pauseFrom)+". New months are not being billed.":"Fund is <b>open</b> — billing continues each month until members vote to pause."}</p>
+    <div class="row">
+      ${DB.settings.paused
+        ? `<button class="btn gold" onclick="setPause(false)">Resume contributions</button>`
+        : `<button class="btn ghost" onclick="setPause(true)">Pause billing (members voted to stop)</button>`}
+    </div>
   </div>
   <div class="card"><h3>Beyond grace — remind now</h3>
     ${red.length?red.map(x=>`<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid #222">
@@ -308,7 +477,14 @@ function treasHome(st,collected,spent){
   </div>`;
 }
 function remindText(x){
-  return `MUST Graduates 2017 Trust Fund: Hello ${x.m.name}, you are ${x.monthsBehind} month(s) behind. Amount to clear the 2025/26 cycle: UGX ${ugx(x.remaining)}. Pay to Stanbic ${BANK}. Grace is 4 months including this month.`;
+  return `MUST Graduates 2017 Trust Fund: Hello ${x.m.name}, you are ${x.monthsBehind} month(s) behind. Amount to clear up to this month: UGX ${ugx(x.remaining)}. Pay to Stanbic ${BANK}. Grace is 4 months including this month. The fund is open until members decide to pause.`;
+}
+function setPause(paused){
+  if(!needPin()) return;
+  DB.settings = DB.settings||defaultSettings();
+  DB.settings.paused = !!paused;
+  DB.settings.pauseFrom = paused ? new Date().toISOString().slice(0,10) : null;
+  save(); render();
 }
 
 function membersView(){
@@ -329,6 +505,18 @@ function membersView(){
         <option value="no">Not entitled</option>
       </select>
     </div></div>
+    <div class="card">
+      <h3>Add or update a member</h3>
+      <label>Name</label><input id="edName"/>
+      <label>Phone</label><input id="edPhone" placeholder="2567…"/>
+      <label>Role</label><select id="edRole"><option>Member</option><option>Chairperson</option><option>Vice Chairperson</option><option>Secretary</option><option>Treasurer</option><option>PRO</option></select>
+      <label>Membership fee paid</label><input id="edFee" type="number" value="10000"/>
+      <label>Total contributed</label><input id="edPaid" type="number" value="0"/>
+      <div class="row" style="margin-top:10px">
+        <button class="btn gold" onclick="saveMember(false)">Add new name</button>
+        <button class="btn ghost" onclick="saveMember(true)">Update existing name</button>
+      </div>
+    </div>
     <div class="card" style="overflow:auto">
     <table><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Paid</th><th>Remaining</th><th>Status</th><th></th></tr></thead>
     <tbody>${rows.map((x,i)=>`<tr>
@@ -338,15 +526,72 @@ function membersView(){
       <td>${ugx(x.m.paid)}</td>
       <td>${ugx(x.remaining)}</td>
       <td><span class="pill ${x.code==='ok'?'ok':x.code==='wait'?'wait':x.code==='no'?'no':'offp'}">${x.label}</span></td>
-      <td><button class="btn ghost" onclick="showStmt(${x.m.id})">Statement</button></td>
+      <td>
+        <button class="btn ghost" onclick="showStmt(${x.m.id})">Statement</button>
+        ${x.m.profile&&x.m.profile.submitted?`<button class="btn ghost" onclick="showFamily(${x.m.id})">Family</button>`:""}
+        <button class="btn ghost" onclick="fillEdit(${x.m.id})">Edit</button>
+      </td>
     </tr>`).join("")}</tbody></table></div>
     <div id="stmtBox"></div>`;
 }
+function fillEdit(id){
+  const m=DB.members.find(x=>x.id===id); if(!m) return;
+  document.getElementById("edName").value=m.name;
+  document.getElementById("edPhone").value=m.phone||"";
+  document.getElementById("edRole").value=m.role||"Member";
+  document.getElementById("edFee").value=m.fee||0;
+  document.getElementById("edPaid").value=m.paid||0;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function saveMember(update){
+  if(!needPin()) return;
+  const name=(document.getElementById("edName").value||"").trim();
+  if(!name){ alert("Name required"); return; }
+  const phone=(document.getElementById("edPhone").value||"").replace(/\D/g,"");
+  const role=document.getElementById("edRole").value||"Member";
+  const fee=Number(document.getElementById("edFee").value||0);
+  const paid=Number(document.getElementById("edPaid").value||0);
+  const existing=DB.members.find(m=>m.name.toLowerCase()===name.toLowerCase());
+  if(update){
+    if(!existing){ alert("No member with that name"); return; }
+    existing.phone=phone; existing.role=role; existing.fee=fee; existing.paid=paid;
+    existing.active=fee>0; existing.tx=existing.tx||[];
+    existing.tx.push({type:"Updated by treasurer",amount:paid,at:new Date().toISOString()});
+  } else {
+    if(existing){ alert("Name already exists — use Update"); return; }
+    const id=DB.members.reduce((n,m)=>Math.max(n,m.id||0),0)+1;
+    DB.members.push({id,name,phone,role,fee,paid,active:fee>0,months:{},tx:[{type:"Added by treasurer",amount:paid,at:new Date().toISOString()}]});
+  }
+  save(); render();
+}
 function showStmt(id){
+  const m=DB.members.find(x=>x.id===id); if(!m) return;
+  const cl=classify(m,new Date());
+  openModal(`<h3>Statement · ${esc(m.name)}</h3>
+    <p>Role ${esc(m.role)} · phone ${esc(m.phone||"—")} · paid ${ugx(m.paid)} · remaining ${ugx(cl.remaining)}</p>
+    <label>From</label><input id="stFrom" type="date"/>
+    <label>To</label><input id="stTo" type="date"/>
+    <button class="btn ghost" onclick="filterStmt(${id})">Filter period</button>
+    <div id="stRows"><table><thead><tr><th>When</th><th>Note</th><th>Amount</th></tr></thead>
+    <tbody>${(m.tx||[]).map(t=>`<tr><td>${esc(t.at).slice(0,16)}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>No lines</td></tr>"}</tbody></table></div>`);
+}
+function filterStmt(id){
   const m=DB.members.find(x=>x.id===id);
-  document.getElementById("stmtBox").innerHTML=`<div class="card"><h3>Statement · ${esc(m.name)}</h3>
-    <table><thead><tr><th>When</th><th>Note</th><th>Amount</th></tr></thead>
-    <tbody>${(m.tx||[]).map(t=>`<tr><td>${esc(t.at).slice(0,16)}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>No lines</td></tr>"}</tbody></table></div>`;
+  const a=document.getElementById("stFrom").value, b=document.getElementById("stTo").value;
+  const rows=(m.tx||[]).filter(t=>{
+    const d=String(t.at).slice(0,10);
+    if(a&&d<a) return false;
+    if(b&&d>b) return false;
+    return true;
+  });
+  document.getElementById("stRows").innerHTML=`<table><thead><tr><th>When</th><th>Note</th><th>Amount</th></tr></thead>
+    <tbody>${rows.map(t=>`<tr><td>${esc(t.at).slice(0,16)}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>None in this period</td></tr>"}</tbody></table>`;
+}
+function showFamily(id){
+  const m=DB.members.find(x=>x.id===id); const p=m.profile||{};
+  openModal(`<h3>${esc(m.name)}</h3>${m.photo?`<img class="photo" src="${m.photo}"/>`:""}
+    <p>Spouse: ${esc(p.spouse||"—")}</p><p>Parents: ${esc(p.parents||"—")}</p><p>Siblings: ${esc(p.siblings||"—")}</p>
+    <p>Phones: ${esc(m.phone||"—")} · ${esc(p.phone2||"—")}</p>`);
 }
 
 function payView(){
@@ -357,16 +602,17 @@ function payView(){
     <label>Amount (UGX)</label><input id="payAmt" type="number" value="10000"/>
     <label>Note</label><input id="payNote" value="Monthly contribution"/>
     <div class="row" style="margin-top:10px">
-      <button class="btn gold" onclick="doPay(1)">Add payment</button>
-      <button class="btn ghost" onclick="doPay(-1)">Reduce / correct</button>
+      <button class="btn gold" onclick="doPay(1,'Payment')">Add payment</button>
+      <button class="btn ghost" onclick="doPay(-1,'Reduction')">Reduce payment</button>
+      <button class="btn ghost" onclick="doPay(-1,'Correction')">Correct entry</button>
     </div>
   </div>`;
 }
-function doPay(sign){
+function doPay(sign,kind){
   if(!needPin()) return;
   const id=Number(document.getElementById("payId").value);
   const amt=Number(document.getElementById("payAmt").value||0);
-  const note=document.getElementById("payNote").value|| (sign>0?"Payment":"Correction");
+  const note=document.getElementById("payNote").value|| kind || (sign>0?"Payment":"Correction");
   if(amt<=0){ alert("Enter amount"); return; }
   const m=DB.members.find(x=>x.id===id);
   m.paid=Math.max(0,(m.paid||0)+sign*amt);
@@ -375,32 +621,32 @@ function doPay(sign){
   save(); alert(m.name+" is now at "+ugx(m.paid)); render();
 }
 
-function chatView(isTreas){
-  const people=["Everyone","Treasurer","Chairperson","Secretary"].concat(DB.members.filter(m=>m.active).map(m=>m.name));
-  const summary=summarizeChat();
-  const lwho=(who||"").toLowerCase();
-  const visible=DB.chat.filter(c=>{
-    if(tagMsg(c.text)!=="benefit") return true;
-    if(isTreas) return true;
-    return (c.from||"").toLowerCase()===lwho || (c.to||"").toLowerCase()===lwho; // benefit lines stay private to treasurer + the two parties
+function visibleChat(isTreas){
+  return DB.chat.filter(c=>{
+    const kind=tagMsg(c.text);
+    const secret=c.confidential || c.private || kind==="benefit" || c.to==="Treasurer";
+    if(secret) return isTreas;
+    return true;
   });
-  const hiddenCount=DB.chat.length-visible.length;
+}
+function chatView(isTreas){
+  const summary=summarizeChat();
   return `${isTreas?`<div class="card"><h3>Digest for treasurer</h3>${summary}
-    <p style="color:var(--muted);font-size:.82rem">You see tagged money / benefit / complaint lines. Social chat stays in the room below.</p></div>`:""}
+    </div>`:""}
   <div class="card">
-    <h3>${isTreas?"Association room":"Talk to members and officials"}</h3>
-    <label>Your name</label><input id="chatFrom" placeholder="Full name as on the register" value="${esc(!isTreas?who:"")}"/>
-    <label>Send to</label><select id="chatTo">${people.map(p=>`<option>${esc(p)}</option>`).join("")}</select>
-    <label>Message</label><textarea id="chatText" rows="3" placeholder="Balances, benefits, meetings…"></textarea>
-    <button class="btn gold" style="margin-top:8px" onclick="postChat()">Post</button>
+    <h3>Association room</h3>
+    <label>Your name</label><input id="chatFrom" value="${esc(who)}" placeholder="Full name as on the register"/>
+    <label>Message (public)</label><textarea id="chatText" rows="3" placeholder="Meetings and general notices only. Benefit requests go to Message treasurer."></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="postChat()">Post publicly</button>
+    </div>
   </div>
-  <div class="card chatlog">${visible.slice().reverse().map(c=>`
-    <div class="bubble ${c.role==='system'?'official':''}">
-      <div class="tag">${esc(c.to||"Everyone")} · ${tagMsg(c.text)}</div>
+  <div class="card chatlog">${visibleChat(isTreas).slice().reverse().map(c=>`
+    <div class="bubble ${c.role==='system'||c.private?'official':''}">
+      <div class="tag">${esc(c.to||"Everyone")} · ${c.private||tagMsg(c.text)==="benefit"?"confidential":tagMsg(c.text)}</div>
       <b>${esc(c.from)}</b> <small>${new Date(c.at).toLocaleString()}</small>
       <div>${esc(c.text)}</div>
-    </div>`).join("")}</div>
-  ${!isTreas&&hiddenCount?`<p style="color:var(--muted);font-size:.78rem;text-align:center">${hiddenCount} benefit-related message(s) are kept private to the treasurer and the people involved.</p>`:""}`;
+    </div>`).join("")}</div>`;
 }
 function summarizeChat(){
   const human=DB.chat.filter(c=>c.role!=="system");
@@ -412,10 +658,15 @@ function summarizeChat(){
 }
 function postChat(){
   const from=(document.getElementById("chatFrom").value||"").trim();
-  const to=document.getElementById("chatTo").value;
   const text=(document.getElementById("chatText").value||"").trim();
   if(!from||!text){ alert("Name and message required"); return; }
-  DB.chat.push({from,to,text,at:new Date().toISOString(),role:"member"});
+  const kind=tagMsg(text);
+  if(kind==="benefit"){
+    DB.chat.push({from,to:"Treasurer",text,at:new Date().toISOString(),role:"member",private:true,confidential:true});
+    alert("Sent");
+  } else {
+    DB.chat.push({from,to:"Everyone",text,at:new Date().toISOString(),role:"member",private:false,confidential:false});
+  }
   save(); render();
 }
 
@@ -441,17 +692,19 @@ function addExp(){
   save(); render();
 }
 
+function downloadFlyer(){ window.print(); }
 function flyerView(st){
   const list=st.filter(x=>x.m.active).sort((a,b)=>a.remaining-b.remaining);
   const mid=Math.ceil(list.length/2);
-  const col=arr=>arr.map(x=>`<div class="flyer-row" style="color:${x.code==='no'?'#ffb4ab':x.code==='wait'?'#f5c15c':'#86efac'}"><span>${esc(x.m.name)}</span><span>${ugx(x.remaining)}</span></div>`).join("");
+  const col=(arr,off)=>arr.map((x,i)=>`<div class="flyer-row" style="color:${x.code==='no'?'#f87171':x.code==='ok'||x.code==='wait'?'#166534':'#111'}"><span>${off+i+1}</span><span>${esc(x.m.name)}</span><span>${ugx(x.remaining)}</span></div>`).join("");
   return `<div class="noprint row" style="margin-bottom:10px">
-    <button class="btn gold" onclick="window.print()">Print / Save PDF</button>
+    <button class="btn gold" onclick="window.print()">Print flyer</button>
+    <button class="btn ghost" onclick="downloadFlyer()">Save as PDF</button>
   </div>
   <div class="flyer-wrap"><div class="flyer">
     <h2>MUST GRADUATES 2017 TRUST FUND</h2>
-    <div class="sub">Outstanding contribution balances · 2025 / 2026<br>Email ${EMAIL}<br>Clear to Stanbic A/C ${BANK}</div>
-    <div class="flyer-grid"><div>${col(list.slice(0,mid))}</div><div>${col(list.slice(mid))}</div></div>
+    <div class="sub">Outstanding to current month · open fund since Jan 2025<br>Email ${EMAIL}<br>Clear to Stanbic A/C ${BANK}</div>
+    <div class="flyer-grid"><div>${col(list.slice(0,mid),0)}</div><div>${col(list.slice(mid),mid)}</div></div>
     <p class="sub" style="margin-top:16px">Green entitled · Gold in grace · Red not entitled<br>
     Active members ${list.length} · still due ${ugx(list.reduce((s,x)=>s+x.remaining,0))} UGX</p>
   </div></div>`;
@@ -459,100 +712,82 @@ function flyerView(st){
 
 function backupView(){
   return `<div class="card">
-    <h3>Sync members from Excel</h3>
-    <p style="color:var(--muted);font-size:.82rem">Upload the register spreadsheet (.xlsx). Expected column headers: <b>Name, Role, Phone, Fee, Paid, Active</b> (Name is required, the rest are optional). Use the two buttons below on purpose — they never overlap:</p>
-    <ul style="color:var(--muted);font-size:.82rem;margin:4px 0 10px;padding-left:18px">
-      <li><b>Add new members</b> only creates rows for names not already on the register — it will not touch existing members.</li>
-      <li><b>Update existing members</b> only edits members already on file, matched by exact full name — it will not create anyone new.</li>
-    </ul>
-    <input id="xlsFile" type="file" accept=".xlsx,.xls" class="hidden" onchange="onExcelChosen(event)"/>
-    <div class="row">
-      <button class="btn gold" onclick="requestExcel('add')">Add new members from Excel</button>
-      <button class="btn ghost" onclick="requestExcel('update')">Update existing members from Excel</button>
-      <button class="btn ghost" onclick="exportExcel()">Export all names to Excel</button>
-    </div>
-  </div>
-  <div class="card">
     <h3>Database</h3>
+    <p>Contributions stay <b>open-ended</b>. There is no 240,000 finish line. Expected = months since Jan 2025 × 10,000, unless you tap Pause.</p>
     <p><b>Internal:</b> saved in this browser (works offline).</p>
     <p><b>External:</b> download JSON and keep it on Google Drive or email ${EMAIL}.</p>
     <div class="row">
-      <button class="btn gold" onclick="downloadBackup()">Download backup</button>
-      <button class="btn ghost" onclick="document.getElementById('imp').click()">Import backup</button>
+      <button class="btn gold" onclick="downloadBackup()">Download JSON backup</button>
+      <button class="btn ghost" onclick="document.getElementById('imp').click()">Import JSON backup</button>
       <input id="imp" type="file" accept="application/json" class="hidden" onchange="importBackup(event)"/>
-      <button class="btn danger" onclick="resetSeed()">Reset to Excel snapshot</button>
+    </div>
+    <p>Upload the association Excel to add missing names and refresh paid totals.</p>
+    <div class="row">
+      <button class="btn gold" onclick="document.getElementById('xls').click()">Upload Excel to sync</button>
+      <input id="xls" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importExcel(event)"/>
+      <button class="btn ghost" onclick="exportExcel()">Download Excel</button>
+      <button class="btn danger" onclick="resetSeed()">Reset to original sheet</button>
     </div>
     <label>New PIN</label><input id="newPin" placeholder="At least 4 characters"/>
     <button class="btn ghost" style="margin-top:8px" onclick="changePin()">Save PIN</button>
   </div>`;
 }
-function requestExcel(mode){
-  if(!needPin()) return;
-  window._xlsMode=mode;
-  document.getElementById("xlsFile").click();
-}
-function onExcelChosen(ev){
-  const f=ev.target.files[0]; if(!f) return;
-  const mode=window._xlsMode||"update";
-  const reader=new FileReader();
-  reader.onload=(e)=>{
-    try{
-      const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""});
-      applyExcelRows(rows, mode);
-    }catch(err){ alert("Could not read that file: "+err.message); }
-  };
-  reader.readAsArrayBuffer(f);
-  ev.target.value="";
-}
-function applyExcelRows(rows, mode){
-  let added=0, updated=0, skipped=0;
-  const truthy=v=>/^(y|yes|true|1|active)$/i.test(String(v).trim());
-  rows.forEach(r=>{
-    const o={}; Object.keys(r).forEach(k=>o[String(k).trim().toLowerCase()]=r[k]);
-    const name=String(o.name||"").trim();
-    if(!name){ skipped++; return; }
-    const existing=DB.members.find(x=>x.name.toLowerCase()===name.toLowerCase());
-    if(existing){
-      if(mode==="add"){ skipped++; return; }
-      if(String(o.role||"").trim()) existing.role=String(o.role).trim();
-      if(String(o.phone||"").trim()) existing.phone=String(o.phone).replace(/\D/g,"");
-      if(String(o.fee)!=="") existing.fee=Number(o.fee)||existing.fee;
-      if(String(o.paid)!=="") existing.paid=Number(o.paid)||0;
-      if(String(o.active).trim()!=="") existing.active=truthy(o.active);
-      updated++;
-    } else {
-      if(mode==="update"){ skipped++; return; }
-      const id=DB.members.reduce((mx,x)=>Math.max(mx,x.id),0)+1;
-      const paid=Number(o.paid)||0;
-      DB.members.push({
-        id, name,
-        role: String(o.role||"Member").trim()||"Member",
-        phone: String(o.phone||"").replace(/\D/g,""),
-        fee: Number(o.fee)||10000,
-        paid,
-        active: String(o.active).trim()===""?true:truthy(o.active),
-        months:{},
-        tx: paid?[{type:"Opening balance from Excel", amount:paid, at:new Date().toISOString().slice(0,10)}]:[]
-      });
-      added++;
-    }
-  });
-  save();
-  alert(`Excel sync done — added ${added}, updated ${updated}, skipped ${skipped}.`);
-  render();
-}
 function exportExcel(){
-  const rows=DB.members.map(m=>({Name:m.name, Role:m.role, Phone:m.phone, Fee:m.fee, Paid:m.paid, Active:m.active?"Yes":"No"}));
-  const ws=XLSX.utils.json_to_sheet(rows);
+  if(typeof XLSX==="undefined"){ alert("Excel tool needs internet once"); return; }
+  const now=new Date();
+  const rows=[["NAME","MEMBERSHIP FEE","STATUS","TOTAL CONTRIBUTED","REMAINING","TEL. No.","ROLE"]];
+  DB.members.forEach(m=>{
+    const c=classify(m,now);
+    rows.push([m.name,m.fee||0,!!m.active,m.paid||0,c.remaining,m.phone||"",m.role||"Member"]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Members");
-  XLSX.writeFile(wb, "MUST-2017-Trust-Fund-members.xlsx");
+  XLSX.utils.book_append_sheet(wb,ws,"Members");
+  XLSX.writeFile(wb,"MUST-2017-Trust-Fund.xlsx");
 }
 function downloadBackup(){
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,2)],{type:"application/json"}));
   a.download="MUST-2017-Trust-Fund-backup.json"; a.click();
+}
+function importExcel(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  if(!needPin()) return;
+  if(typeof XLSX==="undefined"){ alert("Excel reader did not load. Check internet once, then retry."); return; }
+  const r=new FileReader();
+  r.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:"array"});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
+    let added=0, updated=0;
+    rows.forEach(row=>{
+      const raw=String(row[0]||"").replace(/^\s*\d+\.\s*/,"").trim();
+      if(!raw || /name|grand total|mbarara|item/i.test(raw)) return;
+      const fee=Number(row[1]||0)||0;
+      const status=row[2];
+      const active=status===true || String(status).toUpperCase()==="TRUE" || fee>0;
+      let paid=Number(row[15]||0);
+      if(!paid){
+        paid=0;
+        for(let i=3;i<=14;i++) paid+=Number(row[i]||0)||0;
+      }
+      const phone=String(row[17]||"").replace(/\D/g,"");
+      const role=String(row[18]||"Member").trim()||"Member";
+      const existing=DB.members.find(m=>m.name.toLowerCase()===raw.toLowerCase());
+      if(existing){
+        existing.fee=fee; existing.active=active; existing.paid=paid;
+        if(phone) existing.phone=phone.startsWith("256")?phone:("256"+phone);
+        if(role) existing.role=role;
+        updated++;
+      } else {
+        const id=DB.members.reduce((n,m)=>Math.max(n,m.id||0),0)+1;
+        const ph=phone?(phone.startsWith("256")?phone:"256"+phone):"";
+        DB.members.push({id,name:raw,fee,active,paid,phone:ph,role,months:{},tx:[{type:"Imported from Excel",amount:paid,at:new Date().toISOString()}]});
+        added++;
+      }
+    });
+    save(); alert("Excel sync: "+added+" added, "+updated+" updated"); render();
+  };
+  r.readAsArrayBuffer(f);
 }
 function importBackup(ev){
   const f=ev.target.files[0]; if(!f) return;
