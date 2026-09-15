@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>MUST Graduates 2017 Trust Fund</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -79,18 +80,26 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .flyer .sub{text-align:center;color:#ddd;margin:6px 0 14px;font-size:.85rem}
 .flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
 .flyer-row{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;background:#1c1810;font-size:.82rem}
+.best{background:#3a2e12;color:#f3e2a5;text-align:center;padding:8px;margin:8px 0;font-weight:700;border:1px solid #d4af37}
+.ticker{overflow:hidden;white-space:nowrap;border:1px solid var(--gold);background:#1a1408;border-radius:10px;padding:10px 0;margin-top:12px}
+.ticker span{display:inline-block;padding-left:100%;animation:tick 18s linear infinite;color:var(--gold2);font-weight:700;font-size:.95rem}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 .gate{min-height:70vh;display:grid;place-items:center;padding:24px}
 .gate-box{width:min(460px,100%);background:var(--panel);border:1px solid #2c2618;border-radius:24px;padding:28px;text-align:center}
 .hidden{display:none}
 footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
 @media(max-width:800px){
   .stats{grid-template-columns:1fr 1fr}
-  .flyer-grid{grid-template-columns:1fr}
+  .flyer-grid{grid-template-columns:1fr 1fr}
+  .flyer{font-size:.78rem;padding:10px}
+  .flyer h2{font-size:1.05rem}
+  .flyer-row{font-size:.72rem;padding:3px 4px}
 }
 @media print{
-  .noprint,.top .mode,.nav,footer{display:none!important}
-  body,.app{background:#fff;color:#000;padding:0}
-  .flyer{border-width:8px}
+  .noprint,.top .mode,.nav,footer,.stats{display:none!important}
+  body,.app{background:#fff;color:#000;padding:0;margin:0}
+  .flyer-wrap{background:#fff;padding:0}
+  .flyer{border:10px solid #d4af37;background:#111;color:#fff;page-break-inside:avoid}
 }
 </style>
 </head>
@@ -133,6 +142,7 @@ footer{text-align:center;color:#6e6758;font-size:.78rem;margin-top:18px}
       </div>
     </div>
     <div class="mode noprint" id="modeSwitch"></div>
+    <div class="ticker noprint" id="ticker"></div>
   </div>
   <div class="stats" id="stats"></div>
   <div class="nav noprint" id="nav"></div>
@@ -150,18 +160,28 @@ const SEED_EXPENSES = [
   {item:"Refund to Julius Turyahabwe", date:"2026-05-05", amount:47500, by:"Julius"},
   {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias"}
 ];
-const START=new Date(2025,0,1), MONTHLY=10000, GRACE=4;
-const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust.v3";
+const START=new Date(2025,0,1), MONTHLY=10000, GRACE=4, FIRST_DEPOSIT=100000;
+const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="must2017trust.v4";
 
 function defaultSettings(){
-  return {openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL};
+  return {openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT};
+}
+function booksIn(){
+  const feesPaid=DB.members.reduce((s,m)=>s+(m.paid||0)+(m.fee||0),0);
+  return feesPaid + Number((DB.settings&&DB.settings.firstDeposit)||FIRST_DEPOSIT);
+}
+function booksBal(){
+  const spent=DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+  return booksIn()-spent;
 }
 function seed(){
   return {
     pin:"2017",
     settings: defaultSettings(),
     notices:[],
-    members: SEED_MEMBERS.map((m,i)=>({id:i+1,...m,photo:"",profile:{spouse:"",parents:"",siblings:"",phone2:"",submitted:false},tx:m.paid?[{type:"Opening balance from Excel",amount:m.paid,at:"2026-09-14"}]:[]})),
+    resets:[],
+    pending:[],
+    members: SEED_MEMBERS.map((m,i)=>({id:i+1,...m,email:"",photo:"",profile:{spouse:"",father:"",mother:"",guardian:"",siblings:[],phone2:"",submitted:false},tx:m.paid?[{type:"Opening balance from Excel",amount:m.paid,at:"2026-09-14"}]:[]})),
     expenses: SEED_EXPENSES.slice(),
     chat:[{from:"Trust Fund",to:"Everyone",text:"Welcome. Use this board for association matters. The treasurer sees a summary of money, benefits and complaints — not every greeting.",at:new Date().toISOString(),role:"system"}]
   };
@@ -222,39 +242,44 @@ function tagMsg(t){
 }
 
 let mode="member", tab="home", authed=false, who="";
-const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["chat","Chat"],["expenses","Expenses"],["flyer","Flyer"],["backup","Backup"]];
+const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["flyer","Flyer"],["backup","Backup"]];
 const TABS_M=[["home","My status"],["spend","Fund money"],["profile","My details"],["note","Write to treasurer"]];
 
 function needPin(){
   if(authed) return true;
   openModal(`<h3>Treasurer login</h3>
-    <label>PIN</label><input id="pinBox" type="password"/>
+    <label>PIN</label><input id="pinBox" type="password" autofocus onkeydown="if(event.key==='Enter')tryPin()"/>
     <div class="row" style="margin-top:10px">
       <button class="btn gold" onclick="tryPin()">Login</button>
       <button class="btn ghost" onclick="forgotPin()">Forgot PIN</button>
     </div>`);
+  setTimeout(()=>{ const el=document.getElementById("pinBox"); if(el) el.focus(); },50);
   return false;
 }
 function tryPin(){
   const p=document.getElementById("pinBox").value;
-  if(p===DB.pin){ authed=true; closeModal(); render(); }
+  if(p===DB.pin){ authed=true; mode="treasurer"; tab="home"; closeModal(); render(); }
   else alert("Wrong PIN");
 }
 function forgotPin(){
   openModal(`<h3>Reset PIN</h3>
-    <p>Enter the registered email (${esc(DB.settings.recoveryEmail||EMAIL)}).</p>
-    <input id="emBox" placeholder="Email"/>
-    <label>New PIN</label><input id="npBox" type="password"/>
+    <label>Your personal email</label><input id="emPerson" placeholder="you@email.com"/>
+    <label>Registered fund email</label><input id="emBox" placeholder="${esc(EMAIL)}"/>
+    <p>A reset note is stored for the treasurer. Open the mail app to send it.</p>
     <div class="row" style="margin-top:10px">
-      <button class="btn gold" onclick="resetPin()">Reset PIN</button>
+      <button class="btn gold" onclick="requestReset()">Send reset request</button>
     </div>`);
 }
-function resetPin(){
-  const em=(document.getElementById("emBox").value||"").trim().toLowerCase();
-  const np=(document.getElementById("npBox").value||"").trim();
-  if(em!==String(DB.settings.recoveryEmail||EMAIL).toLowerCase()){ alert("Email does not match the registered address."); return; }
-  if(np.length<4){ alert("PIN must be 4+ characters"); return; }
-  DB.pin=np; save(); authed=true; closeModal(); alert("PIN reset"); render();
+function requestReset(){
+  const person=(document.getElementById("emPerson").value||"").trim().toLowerCase();
+  const fund=(document.getElementById("emBox").value||"").trim().toLowerCase();
+  if(!person || fund!==String(DB.settings.recoveryEmail||EMAIL).toLowerCase()){ alert("Use the registered fund email."); return; }
+  const token=Math.random().toString(36).slice(2,10);
+  DB.resets=DB.resets||[];
+  DB.resets.push({person,fund,token,at:new Date().toISOString(),used:false});
+  save();
+  const link=location.href.split("#")[0]+"#reset="+token;
+  location.href="mailto:"+person+"?subject="+encodeURIComponent("Trust Fund PIN reset")+"&body="+encodeURIComponent("Open this link on this same phone/computer to set a new PIN:\n"+link);
 }
 function openModal(html){
   document.getElementById("modal").innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="box">${html}<div class="row" style="margin-top:10px"><button class="btn ghost" onclick="closeModal()">Close</button></div></div></div>`;
@@ -265,14 +290,19 @@ function render(){
   document.getElementById("modeSwitch").innerHTML =
     `<button class="${mode==='member'?'on':''}" onclick="mode='member';tab='home';render()">Member</button>
      <button class="${mode==='treasurer'?'on':''}" onclick="if(needPin()){mode='treasurer';tab='home';render()}">Treasurer</button>`;
+  const best=bestContributor();
+  const tick=document.getElementById("ticker");
+  if(tick) tick.innerHTML = best
+    ? `<span>★ BEST CONTRIBUTOR — ${esc(best.name)} · ${ugx(best.paid)} · keep contributing to the MUST Graduates 2017 Trust Fund ★</span>`
+    : "";
   const now=new Date();
   const active=DB.members.filter(m=>m.active);
   const st=active.map(m=>({m,...classify(m,now)}));
   const due=st.reduce((s,x)=>s+x.remaining,0);
-  const collected=DB.members.reduce((s,m)=>s+(m.paid||0)+(m.fee||0),0);
+  const collected=booksIn();
   const spent=DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
   document.getElementById("stats").innerHTML = `
-    <div class="stat"><b>${ugx(collected)}</b><span>Money collected</span></div>
+    <div class="stat"><b>${ugx(collected)}</b><span>Money in (fees + contributions + first deposit)</span></div>
     <div class="stat"><b>${ugx(due)}</b><span>Still to collect</span></div>
     <div class="stat"><b>${ugx(spent)}</b><span>Money spent</span></div>
     <div class="stat"><b>${ugx(collected-spent)}</b><span>Account balance</span></div>`;
@@ -289,6 +319,7 @@ function render(){
   } else {
     if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
     if(tab==="members") v.innerHTML=membersView();
+    if(tab==="families") v.innerHTML=familiesView();
     if(tab==="pay") v.innerHTML=payView();
     if(tab==="chat") v.innerHTML=chatView(true);
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
@@ -306,9 +337,10 @@ function memberHome(st){
       <input list="nm" id="whoBox" placeholder="Your full name"/>
       <datalist id="nm">${names}</datalist>
       <div class="row" style="margin-top:10px">
-        <button class="btn gold" onclick="who=document.getElementById('whoBox').value.trim();render()">Open my status</button>
+        <button class="btn gold" onclick="openMyStatus()">Open my status</button>
       </div>
-    </div>`;
+    </div>
+    `;
   }
   const pct=found.expectedNow?Math.min(100, Math.round((found.m.paid||0)/found.expectedNow*100)):0;
   const notices=[];
@@ -332,8 +364,60 @@ function memberHome(st){
       <div class="progress"><i style="width:${pct}%"></i></div>
     </div>
     ${updatesBox(false)}
-    <div class="card"><h3>For you</h3>${notices.map(n=>`<p>${esc(n)}</p>`).join("")}</div>`;
+    <div class="card"><h3>For you</h3>${notices.map(n=>`<p>${esc(n)}</p>`).join("")}</div>
+    ${fundView(booksIn(), DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0), DB.members.filter(m=>m.active).reduce((s,m)=>s+classify(m,new Date()).remaining,0))}`;
 }
+function openMyStatus(){
+  const name=(document.getElementById("whoBox").value||"").trim();
+  if(!name){ alert("Type your name"); return; }
+  const found=DB.members.find(m=>m.name.toLowerCase()===name.toLowerCase());
+  if(!found){
+    openModal(`<h3>Name not on the register</h3>
+      <p>Contact the treasurer or an administrator to register you. Thank you.</p>
+      <label>Your name</label><input id="pendName" value="${esc(name)}"/>
+      <label>Phone</label><input id="pendPhone"/>
+      <label>Email</label><input id="pendEmail"/>
+      <button class="btn gold" style="margin-top:8px" onclick="askRegister()">Ask to be registered</button>`);
+    return;
+  }
+  who=found.name; render();
+}
+function askRegister(){
+  DB.pending=DB.pending||[];
+  DB.pending.push({name:document.getElementById("pendName").value.trim(),phone:document.getElementById("pendPhone").value.trim(),email:document.getElementById("pendEmail").value.trim(),at:new Date().toISOString(),ok:false});
+  save(); closeModal(); alert("Request sent. Wait for the treasurer to approve.");
+}
+function familiesView(){
+  const rows=DB.members.filter(m=>m.profile&&m.profile.submitted);
+  const pend=(DB.pending||[]).filter(p=>!p.ok);
+  return `<div class="card"><h3>Registration requests</h3>
+    ${pend.length?pend.map((p,i)=>`<div class="row" style="justify-content:space-between"><div>${esc(p.name)} · ${esc(p.phone)} · ${esc(p.email)}</div>
+      <button class="btn gold" onclick="approvePend(${i})">Approve</button></div>`).join(""):"<p>None.</p>"}</div>
+    <div class="card"><h3>Submitted family files</h3>
+    <div class="row"><button class="btn gold" onclick="exportFamilies()">Download Excel</button>
+    <button class="btn ghost" onclick="printFamilies()">Print / PDF</button></div>
+    ${rows.map(m=>`<p><b>${esc(m.name)}</b> · spouse ${esc(m.profile.spouse||"—")} · father ${esc(m.profile.father||"—")} · mother ${esc(m.profile.mother||"—")} · guardian ${esc(m.profile.guardian||"—")} · siblings ${(m.profile.siblings||[]).join(", ")||"—"} · ${esc(m.email||"")}</p>`).join("")||"<p>None submitted.</p>"}</div>`;
+}
+function approvePend(i){
+  const p=DB.pending[i]; if(!p) return;
+  p.ok=true;
+  if(!DB.members.some(m=>m.name.toLowerCase()===p.name.toLowerCase())){
+    const id=DB.members.reduce((n,m)=>Math.max(n,m.id||0),0)+1;
+    DB.members.push({id,name:p.name,phone:p.phone,email:p.email,fee:0,paid:0,active:false,role:"Member",months:{},profile:{spouse:"",father:"",mother:"",guardian:"",siblings:[],submitted:false},tx:[]});
+  }
+  save(); render();
+}
+function exportFamilies(){
+  if(typeof XLSX==="undefined"){ alert("Need internet once for Excel"); return; }
+  const rows=[["NAME","EMAIL","PHONE","SPOUSE","FATHER","MOTHER","GUARDIAN","SIBLINGS"]];
+  DB.members.filter(m=>m.profile&&m.profile.submitted).forEach(m=>{
+    const p=m.profile;
+    rows.push([m.name,m.email||"",m.phone||"",p.spouse||"",p.father||"",p.mother||"",p.guardian||"",(p.siblings||[]).join("; ")]);
+  });
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Families");
+  XLSX.writeFile(wb,"MUST-2017-family-files.xlsx");
+}
+function printFamilies(){ window.print(); }
 function updatesBox(isExec){
   const list=(DB.notices||[]).filter(n=>isExec || n.audience!=="exec").slice(-3).reverse();
   let extra="";
@@ -387,11 +471,14 @@ function profileView(){
   return `<div class="card"><h3>Personal details</h3>
     ${m.photo?`<img class="photo" src="${m.photo}"/>`:""}
     <label>Passport photo</label><input type="file" accept="image/*" onchange="savePhoto(event)"/>
+    <label>Email (for reset)</label><input id="prEmail" value="${esc(m.email||"")}"/>
     <label>Phone</label><input id="prPhone" value="${esc(m.phone||"")}"/>
     <label>Second phone</label><input id="prPhone2" value="${esc(p.phone2||"")}"/>
-    <label>Spouse</label><input id="prSpouse" value="${esc(p.spouse||"")}"/>
-    <label>Parents</label><input id="prParents" value="${esc(p.parents||"")}"/>
-    <label>Siblings</label><input id="prSiblings" value="${esc(p.siblings||"")}"/>
+    <label>Spouse name</label><input id="prSpouse" value="${esc(p.spouse||"")}"/>
+    <label>Father (one only)</label><input id="prFather" value="${esc(p.father||"")}"/>
+    <label>Mother (one only)</label><input id="prMother" value="${esc(p.mother||"")}"/>
+    <label>Guardian (one only)</label><input id="prGuard" value="${esc(p.guardian||"")}"/>
+    <label>Siblings (one per line)</label><textarea id="prSiblings" rows="3">${esc((p.siblings||[]).join("\n"))}</textarea>
     <button class="btn gold" style="margin-top:8px" onclick="submitProfile()">Save and submit</button>
     <p style="color:var(--muted);font-size:.8rem">Optional. After you submit, treasurer, chair and vice chair can see it.</p>
   </div>`;
@@ -405,11 +492,14 @@ function savePhoto(ev){
 function submitProfile(){
   const m=DB.members.find(x=>x.name.toLowerCase()===who.toLowerCase()); if(!m) return;
   m.phone=document.getElementById("prPhone").value.trim();
+  m.email=document.getElementById("prEmail").value.trim();
   m.profile={
     phone2:document.getElementById("prPhone2").value.trim(),
     spouse:document.getElementById("prSpouse").value.trim(),
-    parents:document.getElementById("prParents").value.trim(),
-    siblings:document.getElementById("prSiblings").value.trim(),
+    father:document.getElementById("prFather").value.trim(),
+    mother:document.getElementById("prMother").value.trim(),
+    guardian:document.getElementById("prGuard").value.trim(),
+    siblings:document.getElementById("prSiblings").value.split(/\n+/).map(s=>s.trim()).filter(Boolean),
     submitted:true
   };
   save(); alert("Saved"); render();
@@ -455,7 +545,8 @@ function treasHome(st,collected,spent){
   const wait=st.filter(x=>x.code==="wait");
   return `<div class="card">
     <h3>Treasurer desk</h3>
-    <p>Collected fees + contributions <b>${ugx(collected)}</b> · spent <b>${ugx(spent)}</b> · balance <b>${ugx(collected-spent)}</b></p>
+    ${(()=>{const b=bestContributor(); return b?`<p class="best">Best contributor: ${esc(b.name)} · ${ugx(b.paid)}</p>`:"";})()}
+    <p>In (contributions + fees + first deposit 100,000) <b>${ugx(collected)}</b> · spent <b>${ugx(spent)}</b> · balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,st.reduce((s,x)=>s+x.remaining,0))}
     ${updatesBox(true)}
     <p>Expected to this month: <b>${ugx(monthsElapsed(new Date())*MONTHLY)}</b> per paying member (${monthsElapsed(new Date())} months since Jan 2025). Grace is ${GRACE} months.</p>
@@ -496,7 +587,7 @@ function membersView(){
   rows=rows.filter(x=>x.m.name.toLowerCase().includes(q));
   return `<div class="card noprint">
     <div class="row">
-      <input style="flex:1" placeholder="Search" value="${esc(window._q||"")}" oninput="window._q=this.value;render()"/>
+      <input id="regSearch" style="flex:1" placeholder="Search" value="${esc(window._q||"")}" oninput="liveSearch(this.value)"/>
       <select style="max-width:180px" onchange="window._flt=this.value;render()">
         <option value="active" ${filter==="active"?"selected":""}>Active</option>
         <option value="all" ${filter==="all"?"selected":""}>All names</option>
@@ -505,7 +596,7 @@ function membersView(){
         <option value="no">Not entitled</option>
       </select>
     </div></div>
-    <div class="card">
+    <div class="card" id="addBox">
       <h3>Add or update a member</h3>
       <label>Name</label><input id="edName"/>
       <label>Phone</label><input id="edPhone" placeholder="2567…"/>
@@ -519,7 +610,7 @@ function membersView(){
     </div>
     <div class="card" style="overflow:auto">
     <table><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Paid</th><th>Remaining</th><th>Status</th><th></th></tr></thead>
-    <tbody>${rows.map((x,i)=>`<tr>
+    <tbody id="regBody">${rows.map((x,i)=>`<tr>
       <td>${i+1}</td>
       <td style="color:${x.code==='no'?'var(--red)':x.code==='wait'?'var(--amber)':x.code==='inactive'?'#777':'var(--green)'};font-weight:700">${esc(x.m.name)}</td>
       <td>${esc(x.m.role)}</td>
@@ -533,6 +624,17 @@ function membersView(){
       </td>
     </tr>`).join("")}</tbody></table></div>
     <div id="stmtBox"></div>`;
+}
+function liveSearch(q){
+  window._q=q;
+  const box=document.getElementById("addBox");
+  if(box) box.style.display=q.trim()?"none":"";
+  const rows=document.querySelectorAll("#regBody tr");
+  const qq=q.toLowerCase();
+  rows.forEach(tr=>{
+    const name=(tr.children[1]&&tr.children[1].textContent||"").toLowerCase();
+    tr.style.display=name.includes(qq)?"":"none";
+  });
 }
 function fillEdit(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
@@ -569,11 +671,24 @@ function showStmt(id){
   const cl=classify(m,new Date());
   openModal(`<h3>Statement · ${esc(m.name)}</h3>
     <p>Role ${esc(m.role)} · phone ${esc(m.phone||"—")} · paid ${ugx(m.paid)} · remaining ${ugx(cl.remaining)}</p>
-    <label>From</label><input id="stFrom" type="date"/>
-    <label>To</label><input id="stTo" type="date"/>
-    <button class="btn ghost" onclick="filterStmt(${id})">Filter period</button>
+    <div class="row" style="justify-content:flex-end">
+      <label>From</label><input id="stFrom" type="date"/>
+      <label>To</label><input id="stTo" type="date"/>
+      <button class="btn ghost" onclick="filterStmt(${id})">Filter period</button>
+    </div>
+    <div class="row" style="margin:8px 0">
+      <button class="btn gold" onclick="printStmt()">Print statement</button>
+      <button class="btn ghost" onclick="downloadStmt('${esc(m.name)}')">Download statement</button>
+    </div>
     <div id="stRows"><table><thead><tr><th>When</th><th>Note</th><th>Amount</th></tr></thead>
     <tbody>${(m.tx||[]).map(t=>`<tr><td>${esc(t.at).slice(0,16)}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>No lines</td></tr>"}</tbody></table></div>`);
+}
+function printStmt(){ window.print(); }
+function downloadStmt(name){
+  const html="<html><body>"+document.getElementById("stRows").innerHTML+"</body></html>";
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([html],{type:"text/html"}));
+  a.download=(name||"statement")+"-statement.html"; a.click();
 }
 function filterStmt(id){
   const m=DB.members.find(x=>x.id===id);
@@ -692,18 +807,53 @@ function addExp(){
   save(); render();
 }
 
-function downloadFlyer(){ window.print(); }
+function flyerStamp(){ return new Date().toLocaleString(); }
+function bestContributor(){
+  const list=DB.members.filter(m=>m.active);
+  if(!list.length) return null;
+  return list.slice().sort((a,b)=>(b.paid||0)-(a.paid||0))[0];
+}
+function printFlyer(){
+  const node=document.getElementById("flyer"); if(!node) return;
+  const w=window.open("","flyerprint");
+  w.document.write(`<!DOCTYPE html><html><head><title>Flyer</title>
+    <style>
+      body{margin:12px;background:#111;color:#fff;font-family:sans-serif}
+      .flyer{border:10px solid #d4af37;padding:14px}
+      h2{color:#d4af37;text-align:center;margin:0}
+      .sub{text-align:center;margin:8px 0}
+      .flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+      .flyer-row{display:grid;grid-template-columns:22px 1fr 80px;background:#1c1810;padding:4px 6px}
+      .best{background:#3a2e12;color:#f3e2a5;text-align:center;padding:8px;margin:8px 0;font-weight:700}
+    </style></head><body>${node.outerHTML}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),300);
+}
+function downloadFlyer(){
+  const node=document.getElementById("flyer"); if(!node){ alert("Open the Flyer tab first"); return; }
+  if(typeof html2pdf==="undefined"){ printFlyer(); return; }
+  html2pdf().set({
+    margin:8,
+    filename:"MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf",
+    image:{type:"jpeg",quality:0.95},
+    html2canvas:{scale:2,backgroundColor:"#111111"},
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
+  }).from(node).save();
+}
 function flyerView(st){
   const list=st.filter(x=>x.m.active).sort((a,b)=>a.remaining-b.remaining);
   const mid=Math.ceil(list.length/2);
-  const col=(arr,off)=>arr.map((x,i)=>`<div class="flyer-row" style="color:${x.code==='no'?'#f87171':x.code==='ok'||x.code==='wait'?'#166534':'#111'}"><span>${off+i+1}</span><span>${esc(x.m.name)}</span><span>${ugx(x.remaining)}</span></div>`).join("");
+  const best=bestContributor();
+  const col=(arr,off)=>arr.map((x,i)=>`<div class="flyer-row" style="color:${x.code==='no'?'#fecaca':x.code==='ok'||x.code==='wait'?'#bbf7d0':'#fff'}"><span>${off+i+1}</span><span>${esc(x.m.name)}${best&&x.m.name===best.name?" ★":""}</span><span>${ugx(x.remaining)}</span></div>`).join("");
   return `<div class="noprint row" style="margin-bottom:10px">
-    <button class="btn gold" onclick="window.print()">Print flyer</button>
+    <button class="btn gold" onclick="printFlyer()">Print flyer</button>
     <button class="btn ghost" onclick="downloadFlyer()">Save as PDF</button>
   </div>
-  <div class="flyer-wrap"><div class="flyer">
+  <div class="flyer-wrap"><div class="flyer" id="flyer">
     <h2>MUST GRADUATES 2017 TRUST FUND</h2>
-    <div class="sub">Outstanding to current month · open fund since Jan 2025<br>Email ${EMAIL}<br>Clear to Stanbic A/C ${BANK}</div>
+    <div class="sub">Outstanding to current month · ${flyerStamp()}<br>Email ${EMAIL}<br>Clear to Stanbic A/C ${BANK}</div>
+    ${best?`<div class="best">Best contributor: ${esc(best.name)} · ${ugx(best.paid)}</div>`:""}
     <div class="flyer-grid"><div>${col(list.slice(0,mid),0)}</div><div>${col(list.slice(mid),mid)}</div></div>
     <p class="sub" style="margin-top:16px">Green entitled · Gold in grace · Red not entitled<br>
     Active members ${list.length} · still due ${ugx(list.reduce((s,x)=>s+x.remaining,0))} UGX</p>
@@ -735,14 +885,21 @@ function backupView(){
 function exportExcel(){
   if(typeof XLSX==="undefined"){ alert("Excel tool needs internet once"); return; }
   const now=new Date();
-  const rows=[["NAME","MEMBERSHIP FEE","STATUS","TOTAL CONTRIBUTED","REMAINING","TEL. No.","ROLE"]];
+  const head=["NAME","MEMBERSHIP FEE","STATUS","JAN","FEB","MAR","APR","MAY","JUNE","JUL","AUG","SEP","OCT","NOV","DEC","TOTAL CONTRIBUTED","REMAINING CONTRIBUTION","TEL. No.","ROLE"];
+  const rows=[head];
+  const labs=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   DB.members.forEach(m=>{
     const c=classify(m,now);
-    rows.push([m.name,m.fee||0,!!m.active,m.paid||0,c.remaining,m.phone||"",m.role||"Member"]);
+    const mo=m.months||{};
+    rows.push([m.name,m.fee||0,!!m.active,...labs.map(k=>mo[k]||""),m.paid||0,c.remaining,m.phone||"",m.role||"Member"]);
   });
+  rows.push(["GRAND TOTAL",DB.members.reduce((s,m)=>s+(m.fee||0),0),"","","","","","","","","","","","",DB.members.reduce((s,m)=>s+(m.paid||0),0),"","",""]);
   const ws=XLSX.utils.aoa_to_sheet(rows);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"Members");
+  const ex=[["ITEM/REASON","DATE","AMOUNT","C/O"]];
+  DB.expenses.forEach(e=>ex.push([e.item,e.date,e.amount,e.by]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ex),"Expenditure");
   XLSX.writeFile(wb,"MUST-2017-Trust-Fund.xlsx");
 }
 function downloadBackup(){
@@ -805,6 +962,14 @@ function changePin(){
   const n=document.getElementById("newPin").value.trim();
   if(n.length<4){ alert("Use at least 4 characters"); return; }
   DB.pin=n; save(); alert("PIN changed");
+}
+if(location.hash.startsWith("#reset=")){
+  const token=location.hash.slice(7);
+  const rec=(DB.resets||[]).find(r=>r.token===token && !r.used);
+  if(rec){
+    const np=prompt("Set a new treasurer PIN");
+    if(np && np.length>=4){ DB.pin=np; rec.used=true; save(); alert("PIN updated"); }
+  }
 }
 render();
 </script>
