@@ -31,11 +31,17 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .legend span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin:4px 0}
 .dot{width:10px;height:10px;border-radius:50%}
 .photo{width:72px;height:72px;border-radius:12px;object-fit:cover;border:2px solid var(--gold);background:#111}
-.flyer{background:linear-gradient(#ffe566,#f5c400);color:#111;border:8px solid #111;padding:10px 12px;font-size:.78rem}
-.flyer h2{margin:0;text-align:center;color:#111;font-size:1.15rem;letter-spacing:.04em}
-.flyer .sub{text-align:center;color:#222;margin:4px 0 8px;font-size:.72rem}
-.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px}
-.flyer-row{display:grid;grid-template-columns:22px 1fr 78px;gap:4px;padding:3px 6px;background:rgba(0,0,0,.08);font-weight:600}
+.flyer-wrap{background:#f5c400;padding:14px}
+.flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:14px 12px;font-size:.72rem}
+.flyer h2{margin:0;text-align:center;color:#f5c400;font-size:1.15rem;letter-spacing:.06em}
+.flyer .sub{text-align:center;color:#eee;margin:4px 0 8px;font-size:.72rem}
+.flyer .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:2px 10px;font-size:.68rem}
+.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.flyer table{width:100%;border-collapse:collapse;background:#f5e6a8;color:#111}
+.flyer th{background:#111;color:#fff;font-size:.62rem;padding:5px 6px}
+.flyer td{padding:4px 6px;border-bottom:1px solid #e0d08a;font-size:.7rem;font-weight:600}
+.flyer .bar{background:#111;color:#f5c400;text-align:center;padding:8px;margin-top:8px;font-weight:700}
+.flyer .legend-box{background:#fff;color:#111;padding:8px;margin-top:8px;font-size:.68rem}
 .brand h1{margin:0;font-size:clamp(1.35rem,3vw,2rem);color:var(--gold2);letter-spacing:.02em}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
 .mode{display:flex;background:#000;border:1px solid #333;border-radius:999px;overflow:hidden}
@@ -79,7 +85,7 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .ticker{overflow:hidden;white-space:nowrap;border:1px solid var(--gold);background:#1a1408;border-radius:10px;padding:10px 0;margin-top:12px}
 .ticker span{display:inline-block;padding-left:100%;animation:tick 18s linear infinite;color:var(--gold2);font-weight:700;font-size:.95rem}
 @keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
-.hero{display:none;grid-template-columns:1fr 140px;gap:12px;align-items:center;margin:12px 0}
+.hero{display:none;grid-template-columns:1.2fr 1fr;gap:12px;align-items:center;margin:12px 0}
 .hero.show{display:grid}
 .money-slide{position:relative;min-height:92px}
 .money-slide .stat{display:none}
@@ -391,6 +397,10 @@ function memberHome(st){
       ${found.monthsBehind?` · ${found.monthsBehind} month(s) behind`:""}
       ${found.monthsAhead?` · prepaid ${found.monthsAhead} month(s)`:""}</p>
       <div class="progress"><i style="width:${pct}%"></i></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn gold" onclick="showStmt(${found.m.id})">My statement</button>
+        <button class="btn ghost" onclick="downloadMemberStmt(${found.m.id})">Download statement</button>
+      </div>
     </div>
     ${updatesBox(false)}
     <div class="card"><h3>For you</h3>${notices.map(n=>`<p>${esc(n)}</p>`).join("")}</div>
@@ -499,7 +509,15 @@ function miniPie(collected,due,spent,bal){
     d+=`<path class="${i===0?'hot':''}" data-i="${i}" d="M50 50 L${x1} ${y1} A40 40 0 ${f>0.5?1:0} 1 ${x2} ${y2} Z" fill="${p.c}"/>`;
     a+=f;
   });
-  return `<svg width="130" height="130" viewBox="0 0 100 100">${d}<circle cx="50" cy="50" r="22" fill="#0b0b0b"/></svg>`;
+  const pcts=parts.map(p=>Math.round(p.v/t*100));
+  return `<svg width="130" height="130" viewBox="0 0 100 100">${d}<circle cx="50" cy="50" r="22" fill="#0b0b0b"/>
+    <text x="50" y="53" text-anchor="middle" fill="#f3e2a5" font-size="10" font-weight="700">${pcts[0]}%</text></svg>
+    <div class="legend" style="margin-top:6px">
+      <span><i class="dot" style="background:#d4af37"></i> In ${pcts[0]}%</span>
+      <span><i class="dot" style="background:#3dd68c"></i> Due ${pcts[1]}%</span>
+      <span><i class="dot" style="background:#ff6b5a"></i> Spent ${pcts[2]}%</span>
+      <span><i class="dot" style="background:#60a5fa"></i> Bal ${pcts[3]}%</span>
+    </div>`;
 }
 function startMoneySlide(){
   if(window._moneyTimer) return;
@@ -771,10 +789,23 @@ function showStmt(id){
 }
 function printStmt(){ window.print(); }
 function downloadStmt(name){
-  const html="<html><body>"+document.getElementById("stRows").innerHTML+"</body></html>";
+  const box=document.getElementById("stRows");
+  const html="<html><body>"+(box?box.innerHTML:"")+"</body></html>";
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([html],{type:"text/html"}));
   a.download=(name||"statement")+"-statement.html"; a.click();
+}
+function downloadMemberStmt(id){
+  const m=DB.members.find(x=>x.id===id); if(!m) return;
+  const cl=classify(m,new Date());
+  const rows=(m.tx||[]).map(t=>`<tr><td>${esc(String(t.at).slice(0,16))}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>No lines</td></tr>";
+  const html=`<html><body style="font-family:sans-serif"><h2>${esc(m.name)}</h2>
+    <p>Paid ${ugx(m.paid)} · Remaining ${ugx(cl.remaining)}</p>
+    <table border="1" cellspacing="0" cellpadding="6"><tr><th>When</th><th>Note</th><th>Amount</th></tr>${rows}</table></body></html>`;
+  const blob=new Blob([html],{type:"text/html"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=m.name+"-statement.html"; a.click();
+  window.open(url,"_blank");
 }
 function filterStmt(id){
   const m=DB.members.find(x=>x.id===id);
@@ -902,39 +933,54 @@ function bestContributor(){
 function printFlyer(){
   const node=document.getElementById("flyer"); if(!node) return;
   const w=window.open("","flyerprint");
-  if(!w){ alert("Allow popups once to print or save PDF"); return; }
-  w.document.write(`<!DOCTYPE html><html><head><title>MUST 2017 Flyer</title>
-    <style>
-      @page{size:A4;margin:10mm}
-      body{margin:0;font-family:Arial,sans-serif;background:#fff}
-      .flyer{background:linear-gradient(#ffe566,#f5c400);color:#111;border:10px solid #111;padding:12px}
-      h2{text-align:center;margin:0;font-size:20px}
-      .sub{text-align:center;margin:6px 0;font-size:12px}
-      .flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
-      .flyer-row{display:grid;grid-template-columns:22px 1fr 78px;padding:3px 6px;background:rgba(0,0,0,.08);font-size:12px;font-weight:700}
-      .best{background:#111;color:#f5c400;text-align:center;padding:8px;margin:8px 0;font-weight:700}
-    </style></head><body>${node.outerHTML}
-    <script>window.onload=function(){window.focus();window.print();}<\/script>
-    </body></html>`);
+  if(!w){ alert("Allow popups once"); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Flyer</title></head><body>${node.outerHTML}</body></html>`);
   w.document.close();
 }
-function downloadFlyer(){ printFlyer(); }
+function downloadFlyer(){
+  const node=document.getElementById("flyer"); if(!node){ alert("Open Flyer first"); return; }
+  if(typeof html2pdf==="undefined"){ alert("Wait for the page to finish loading, then tap Save as PDF again"); return; }
+  const name="MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf";
+  html2pdf().set({
+    margin:4,
+    filename:name,
+    image:{type:"jpeg",quality:0.98},
+    html2canvas:{scale:2,backgroundColor:"#f5c400",windowWidth:900},
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+    pagebreak:{mode:["avoid-all"]}
+  }).from(node).outputPdf("blob").then(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=name; a.click();
+    window.open(url,"_blank");
+  });
+}
 function flyerView(st){
   const list=st.filter(x=>x.m.active).sort((a,b)=>a.remaining-b.remaining);
   const mid=Math.ceil(list.length/2);
-  const best=bestContributor();
-  const col=(arr,off)=>arr.map((x,i)=>`<div class="flyer-row" style="color:${x.code==='no'?'#7f1d1d':x.code==='ok'||x.code==='wait'?'#14532d':'#111'}"><span>${off+i+1}</span><span>${esc(x.m.name)}${best&&x.m.name===best.name?" ★":""}</span><span>${ugx(x.remaining)}</span></div>`).join("");
+  const due=list.reduce((s,x)=>s+x.remaining,0);
+  const col=(arr,off)=>`
+    <table><thead><tr><th>S/N</th><th>NAME</th><th>BALANCE (UGX)</th></tr></thead>
+    <tbody>${arr.map((x,i)=>`<tr>
+      <td>${off+i+1}</td>
+      <td style="color:${x.code==='no'?'#b91c1c':(x.code==='ok'||x.code==='wait')?'#166534':'#111'}">${esc(x.m.name)}</td>
+      <td>${Number(x.remaining).toLocaleString()}</td>
+    </tr>`).join("")}</tbody></table>`;
   return `<div class="noprint row" style="margin-bottom:10px">
-    <button class="btn gold" onclick="printFlyer()">Print flyer</button>
-    <button class="btn ghost" onclick="downloadFlyer()">Save as PDF</button>
+    <button class="btn gold" onclick="downloadFlyer()">Save as PDF</button>
+    <button class="btn ghost" onclick="printFlyer()">Open flyer page</button>
   </div>
   <div class="flyer-wrap"><div class="flyer" id="flyer">
     <h2>MUST GRADUATES 2017 TRUST FUND</h2>
-    <div class="sub">Outstanding to current month · ${flyerStamp()}<br>Email ${EMAIL}<br>Clear to Stanbic A/C ${BANK}</div>
-    ${best?`<div class="best">Best contributor: ${esc(best.name)} · ${ugx(best.paid)}</div>`:""}
+    <div class="sub">Outstanding Contribution Balances · ${flyerStamp()}<br>
+    <span class="email-pill">Email: ${EMAIL}</span></div>
     <div class="flyer-grid"><div>${col(list.slice(0,mid),0)}</div><div>${col(list.slice(mid),mid)}</div></div>
-    <p class="sub" style="margin-top:16px">Green entitled · Gold in grace · Red not entitled<br>
-    Active members ${list.length} · still due ${ugx(list.reduce((s,x)=>s+x.remaining,0))} UGX</p>
+    <div class="bar">TOTAL MEMBERS: ${list.length} &nbsp;|&nbsp; TOTAL AMOUNT DUE: ${Number(due).toLocaleString()} UGX</div>
+    <div class="legend-box">
+      BENEFIT ENTITLEMENT STATUS:<br>
+      <span style="color:#166534">GREEN NAMES — entitled (inside 4-month grace).</span><br>
+      <span style="color:#b91c1c">RED NAMES — not entitled (beyond grace).</span>
+    </div>
+    <div class="bar">CLEAR YOUR BALANCE TO:<br>STANBIC BANK A/C ${BANK}</div>
   </div></div>`;
 }
 
