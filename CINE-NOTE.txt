@@ -1,0 +1,2 @@
+The live site header plays must-hero.mp4 with must-community.jpg as fallback.
+If the clip does not start, tap the page once. Browsers block unmuted autoplay; this clip is muted.
