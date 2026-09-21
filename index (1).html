@@ -135,11 +135,12 @@ html[data-font="xl"]{font-size:20px}
   .stats{grid-template-columns:1fr}
   .flyer-grid{grid-template-columns:1fr 1fr}
 }
+@page { size: A4 landscape; margin: 8mm; }
 @media print{
-  .noprint,.top .mode,.nav,footer,.stats{display:none!important}
-  body,.app{background:#fff;color:#000;padding:0;margin:0}
-  .flyer-wrap{background:#fff;padding:0}
-  .flyer{page-break-inside:avoid}
+  .noprint,.top,.hero,.nav,footer,.stats,.cine,.mode,.gear,#uiMenu,#modal{display:none!important}
+  html,body,.app{background:#fff!important;color:#000;padding:0;margin:0}
+  .flyer-wrap{background:#fff;padding:0;margin:0}
+  .flyer{page-break-inside:avoid;box-shadow:none}
 }
 </style>
 </head>
@@ -1127,7 +1128,11 @@ function bestContributor(){
   if(!list.length) return null;
   return list.slice().sort((a,b)=>(b.paid||0)-(a.paid||0))[0];
 }
-function printFlyer(){ downloadFlyer(); }
+function printFlyer(){
+  const node=document.getElementById("flyer");
+  if(!node){ alert("Open Flyer first"); return; }
+  window.print();
+}
 
 function fitFlyerOnOnePage(canvas, name){
   const JsPDF=(window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
