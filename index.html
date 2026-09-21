@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>MUST Graduates 2017 Trust Fund</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -30,7 +32,7 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .top{position:relative;overflow:hidden;display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:18px 20px;background:
   radial-gradient(800px 200px at 10% -20%, rgba(212,175,55,.18), transparent),
   linear-gradient(180deg,#161616,#101010);border:1px solid #2c2618;border-radius:22px}
-.cine{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:22px;background:#070707;pointer-events:auto}
+.cine{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:22px;background:#070707;pointer-events:none}
 .cine video,.cine img{position:absolute;left:0;right:0;top:-18%;width:100%;height:140%;object-fit:cover;object-position:center 62%;filter:saturate(1.12) contrast(1.12) brightness(.72);pointer-events:none}
 .cine img.cine-still{opacity:.55;animation:cineKen 22s ease-in-out infinite alternate}
 .cine video{opacity:0;transition:opacity .7s ease;pointer-events:none}
@@ -1125,11 +1127,53 @@ function bestContributor(){
   if(!list.length) return null;
   return list.slice().sort((a,b)=>(b.paid||0)-(a.paid||0))[0];
 }
-function printFlyer(){ downloadFlyer(); }
+function printFlyer(){
+  const node=document.getElementById("flyer");
+  if(!node){ alert("Open Flyer first"); return; }
+  const w=window.open("","flyerprint","width=1100,height=800");
+  if(!w){ alert("Allow popups once so the printer window can open"); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>MUST 2017 Flyer</title>
+  <style>
+    @page{size:A4 landscape;margin:8mm}
+    html,body{margin:0;background:#f5c400}
+    body{font-family:Arial,sans-serif}
+    .flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:8px;font-size:12px}
+    h2{margin:0;text-align:center;color:#f5c400;font-size:20px}
+    .sub{text-align:center;color:#eee;margin:4px 0 6px;font-size:11px}
+    .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+    .flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;background:#f5e6a8;color:#111}
+    th{background:#111;color:#fff;font-size:10px;padding:3px 4px}
+    td{padding:2px 4px;border-bottom:1px solid #e0d08a;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    td:first-child,th:first-child{width:28px}
+    td:last-child,th:last-child{width:78px;text-align:right}
+    .bar{background:#111;color:#f5c400;text-align:center;padding:6px;margin-top:6px;font-weight:800;font-size:13px}
+    .legend-box{background:#fff;color:#111;padding:6px 8px;margin-top:6px;font-size:11px;font-weight:700}
+  </style></head><body>${node.outerHTML}
+  <script>window.onload=function(){window.focus();window.print();};<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+function jsPdfCtor(){
+  return (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
+}
 
 function fitFlyerOnOnePage(canvas, name){
-  const JsPDF=(window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-  if(!JsPDF){ alert("PDF tool did not load. Refresh the page once."); return; }
+  const JsPDF=jsPdfCtor();
+  if(!JsPDF){
+    if(typeof html2pdf==="undefined"){ alert("PDF tool did not load. Refresh the page once."); return; }
+    const node=document.getElementById("flyer");
+    html2pdf().set({
+      margin:6,
+      filename:name,
+      image:{type:"jpeg",quality:0.95},
+      html2canvas:{scale:2,backgroundColor:"#f5c400"},
+      jsPDF:{unit:"mm",format:"a4",orientation:"landscape"},
+      pagebreak:{mode:[]}
+    }).from(node).outputPdf("blob").then(blob=>openFile(blob,name));
+    return;
+  }
   const pdf=new JsPDF({orientation:"landscape", unit:"mm", format:"a4", compress:true});
   const pw=pdf.internal.pageSize.getWidth();
   const ph=pdf.internal.pageSize.getHeight();
@@ -1144,22 +1188,22 @@ function fitFlyerOnOnePage(canvas, name){
 function grabFlyerCanvas(el){
   const opts={scale:2, backgroundColor:"#f5c400", useCORS:true, scrollX:0, scrollY:0, logging:false};
   if(window.html2canvas) return window.html2canvas(el, opts);
-  return html2pdf().set({html2canvas:opts}).from(el).toCanvas().get("canvas");
+  if(typeof html2pdf!=="undefined") return html2pdf().set({html2canvas:opts}).from(el).toCanvas().get("canvas");
+  return Promise.reject(new Error("no canvas tool"));
 }
 
 function downloadFlyer(){
   const node=document.getElementById("flyer");
   if(!node){ alert("Open Flyer first"); return; }
-  if(typeof html2pdf==="undefined" && !window.html2canvas && !((window.jspdf&&window.jspdf.jsPDF)||window.jsPDF)){
+  const name="MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf";
+  if(!window.html2canvas && typeof html2pdf==="undefined" && !jsPdfCtor()){
     alert("Wait for the page to finish loading, then tap Save as PDF again"); return;
   }
-  const name="MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf";
   const host=document.createElement("div");
   host.style.cssText="position:fixed;left:-1800px;top:0;width:1100px;background:#f5c400;padding:8px;";
   const clone=node.cloneNode(true);
   clone.id="flyerShot";
   clone.style.width="1084px";
-  clone.style.maxWidth="1084px";
   host.appendChild(clone);
   document.body.appendChild(host);
   Promise.resolve(grabFlyerCanvas(clone)).then(canvas=>{
@@ -1168,7 +1212,15 @@ function downloadFlyer(){
   }).catch(err=>{
     host.remove();
     console.error(err);
-    alert("Could not build a one-page flyer. Refresh and try Save as PDF again.");
+    if(typeof html2pdf!=="undefined"){
+      html2pdf().set({
+        margin:6, filename:name,
+        html2canvas:{scale:2,backgroundColor:"#f5c400"},
+        jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}
+      }).from(node).outputPdf("blob").then(blob=>openFile(blob,name));
+      return;
+    }
+    alert("Could not build the flyer PDF. Refresh and try again.");
   });
 }
 
