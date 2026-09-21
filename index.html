@@ -47,19 +47,20 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .legend span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin:4px 0}
 .dot{width:10px;height:10px;border-radius:50%}
 .photo{width:72px;height:72px;border-radius:12px;object-fit:cover;border:2px solid var(--gold);background:#111}
-.flyer-wrap{background:#f5c400;padding:12px}
-.flyer{background:#0a0a0a;color:#fff;border:4px solid #d4af37;padding:10px 10px;font-size:1rem}
-.flyer h2{margin:0;text-align:center;color:#f5c400;font-size:1.55rem;letter-spacing:.03em;line-height:1.15}
-.flyer .sub{text-align:center;color:#eee;margin:6px 0 8px;font-size:.95rem;line-height:1.3}
-.flyer .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:4px 12px;font-size:.92rem;font-weight:700}
-.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* flyer — sized for one A4 landscape sheet */
+.flyer-wrap{background:#f5c400;padding:8px}
+.flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:8px 8px;font-size:12px}
+.flyer h2{margin:0;text-align:center;color:#f5c400;font-size:20px;letter-spacing:.03em;line-height:1.1}
+.flyer .sub{text-align:center;color:#eee;margin:4px 0 6px;font-size:11px;line-height:1.25}
+.flyer .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .flyer table{width:100%;border-collapse:collapse;table-layout:fixed;background:#f5e6a8;color:#111}
-.flyer th{background:#111;color:#fff;font-size:.88rem;padding:6px 6px;letter-spacing:.03em}
-.flyer td{padding:4px 6px;border-bottom:1px solid #e0d08a;font-size:.92rem;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.flyer td:first-child,.flyer th:first-child{width:36px}
-.flyer td:last-child,.flyer th:last-child{width:108px;text-align:right}
-.flyer .bar{background:#111;color:#f5c400;text-align:center;padding:10px 8px;margin-top:8px;font-weight:800;font-size:1.12rem;line-height:1.3}
-.flyer .legend-box{background:#fff;color:#111;padding:10px;margin-top:8px;font-size:.98rem;line-height:1.35;font-weight:700}
+.flyer th{background:#111;color:#fff;font-size:10px;padding:3px 4px;letter-spacing:.04em}
+.flyer td{padding:2px 4px;border-bottom:1px solid #e0d08a;font-size:11px;font-weight:700;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flyer td:first-child,.flyer th:first-child{width:28px}
+.flyer td:last-child,.flyer th:last-child{width:78px;text-align:right}
+.flyer .bar{background:#111;color:#f5c400;text-align:center;padding:6px 6px;margin-top:6px;font-weight:800;font-size:13px;line-height:1.25}
+.flyer .legend-box{background:#fff;color:#111;padding:6px 8px;margin-top:6px;font-size:11px;line-height:1.3;font-weight:700}
 .brand h1{margin:0;font-size:clamp(1.35rem,3vw,2rem);color:var(--gold2);letter-spacing:.02em}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
 .mode{display:flex;background:#000;border:1px solid #333;border-radius:999px;overflow:hidden}
@@ -1124,47 +1125,53 @@ function bestContributor(){
   if(!list.length) return null;
   return list.slice().sort((a,b)=>(b.paid||0)-(a.paid||0))[0];
 }
-function printFlyer(){
-  const node=document.getElementById("flyer"); if(!node) return;
-  const w=window.open("","flyerprint");
-  if(!w){ alert("Allow popups once to print"); return; }
-  w.document.write(`<!DOCTYPE html><html><head><title>Flyer</title>
-    <style>body{margin:10px;font-family:Arial,sans-serif}.flyer-wrap{background:#f5c400;padding:16px}.flyer{background:#0a0a0a;color:#fff;border:4px solid #d4af37;padding:14px;font-size:18px}h2{color:#f5c400;text-align:center;font-size:30px;margin:0}.sub{font-size:17px;text-align:center}.email-pill{font-size:16px;font-weight:700}table{width:100%;background:#f5e6a8;color:#111;border-collapse:collapse}th{background:#111;color:#fff;font-size:16px;padding:8px}td{padding:7px 8px;border-bottom:1px solid #e0d08a;font-size:17px;font-weight:700}.bar{background:#111;color:#f5c400;text-align:center;padding:14px;margin-top:10px;font-size:20px;font-weight:800}.legend-box{background:#fff;color:#111;padding:14px;margin-top:10px;font-size:18px;font-weight:700}.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}</style>
-    </head><body>${node.outerHTML}<script>window.onload=function(){window.print();}<\/script></body></html>`);
-  w.document.close();
-}
+function printFlyer(){ downloadFlyer(); }
+
 function fitFlyerOnOnePage(canvas, name){
-  const JsPDF=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
-  if(!JsPDF){ alert("PDF tool did not load. Refresh once."); return; }
-  const pdf=new JsPDF({orientation:"landscape",unit:"mm",format:"a4",compress:true});
+  const JsPDF=(window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  if(!JsPDF){ alert("PDF tool did not load. Refresh the page once."); return; }
+  const pdf=new JsPDF({orientation:"landscape", unit:"mm", format:"a4", compress:true});
   const pw=pdf.internal.pageSize.getWidth();
   const ph=pdf.internal.pageSize.getHeight();
-  const pad=5;
+  const pad=6;
   const maxW=pw-pad*2, maxH=ph-pad*2;
-  let w=maxW, h=w*canvas.height/canvas.width;
-  if(h>maxH){ h=maxH; w=h*canvas.width/canvas.height; }
-  const x=(pw-w)/2, y=(ph-h)/2;
-  pdf.addImage(canvas.toDataURL("image/jpeg",0.95),"JPEG",x,y,w,h,"flyer","FAST");
+  let w=maxW, h=w*(canvas.height/canvas.width);
+  if(h>maxH){ h=maxH; w=h*(canvas.width/canvas.height); }
+  pdf.addImage(canvas.toDataURL("image/jpeg",0.95), "JPEG", (pw-w)/2, (ph-h)/2, w, h, "flyer", "FAST");
   openFile(pdf.output("blob"), name);
 }
+
+function grabFlyerCanvas(el){
+  const opts={scale:2, backgroundColor:"#f5c400", useCORS:true, scrollX:0, scrollY:0, logging:false};
+  if(window.html2canvas) return window.html2canvas(el, opts);
+  return html2pdf().set({html2canvas:opts}).from(el).toCanvas().get("canvas");
+}
+
 function downloadFlyer(){
-  const node=document.getElementById("flyer"); if(!node){ alert("Open Flyer first"); return; }
+  const node=document.getElementById("flyer");
+  if(!node){ alert("Open Flyer first"); return; }
+  if(typeof html2pdf==="undefined" && !window.html2canvas && !((window.jspdf&&window.jspdf.jsPDF)||window.jsPDF)){
+    alert("Wait for the page to finish loading, then tap Save as PDF again"); return;
+  }
   const name="MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf";
-  const src=node.closest(".flyer-wrap")||node;
   const host=document.createElement("div");
-  host.style.cssText="position:fixed;left:-1600px;top:0;width:1180px;background:#f5c400;";
-  const clone=src.cloneNode(true);
-  clone.style.width="1180px";
-  clone.style.maxWidth="1180px";
+  host.style.cssText="position:fixed;left:-1800px;top:0;width:1100px;background:#f5c400;padding:8px;";
+  const clone=node.cloneNode(true);
+  clone.id="flyerShot";
+  clone.style.width="1084px";
+  clone.style.maxWidth="1084px";
   host.appendChild(clone);
   document.body.appendChild(host);
-  const opts={scale:2,backgroundColor:"#f5c400",useCORS:true,scrollX:0,scrollY:0,windowWidth:1180};
-  const done=canvas=>{ host.remove(); fitFlyerOnOnePage(canvas, name); };
-  const fail=err=>{ host.remove(); console.error(err); alert("Could not build the one-page flyer. Refresh and try again."); };
-  if(window.html2canvas){ window.html2canvas(clone, opts).then(done).catch(fail); return; }
-  if(typeof html2pdf==="undefined"){ fail(new Error("no html2pdf")); return; }
-  html2pdf().set({html2canvas:opts}).from(clone).toCanvas().get("canvas").then(done).catch(fail);
+  Promise.resolve(grabFlyerCanvas(clone)).then(canvas=>{
+    host.remove();
+    fitFlyerOnOnePage(canvas, name);
+  }).catch(err=>{
+    host.remove();
+    console.error(err);
+    alert("Could not build a one-page flyer. Refresh and try Save as PDF again.");
+  });
 }
+
 function flyerView(st){
   const now=new Date();
   const elapsed=monthsElapsed(now);
