@@ -30,16 +30,16 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .top{position:relative;overflow:hidden;display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:18px 20px;background:
   radial-gradient(800px 200px at 10% -20%, rgba(212,175,55,.18), transparent),
   linear-gradient(180deg,#161616,#101010);border:1px solid #2c2618;border-radius:22px}
-.cine{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;border-radius:22px;background:#070707}
-.cine video,.cine img{position:absolute;left:0;right:0;top:-30%;width:100%;height:160%;object-fit:cover;object-position:center 78%;filter:saturate(1.08) contrast(1.15) brightness(.48)}
-.cine img.cine-still{opacity:.4;animation:cineKen 22s ease-in-out infinite alternate}
-.cine video{opacity:0;transition:opacity .7s ease}
-.cine video.is-on{opacity:.45}
-.cine img.cine-still.is-dim{opacity:.1}
-.cine::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,4,4,.78),rgba(4,4,4,.58) 50%,rgba(4,4,4,.86))}
+.cine{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:22px;background:#070707;pointer-events:auto}
+.cine video,.cine img{position:absolute;left:0;right:0;top:-18%;width:100%;height:140%;object-fit:cover;object-position:center 62%;filter:saturate(1.12) contrast(1.12) brightness(.72);pointer-events:none}
+.cine img.cine-still{opacity:.55;animation:cineKen 22s ease-in-out infinite alternate}
+.cine video{opacity:0;transition:opacity .7s ease;pointer-events:none}
+.cine video.is-on{opacity:.7}
+.cine img.cine-still.is-dim{opacity:.12}
+.cine::after{content:"";position:absolute;inset:0;pointer-events:auto;background:linear-gradient(90deg,rgba(7,7,7,.72) 0%,rgba(7,7,7,.28) 38%,rgba(7,7,7,.28) 62%,rgba(7,7,7,.78) 100%)}
 @keyframes cineKen{0%{transform:scale(1.02)}100%{transform:scale(1.1)}}
-.top>.row,.top .brand,.top .crest,.top .mode,.top .gear{position:relative;z-index:1}
-.brand h1,.brand p{text-shadow:0 2px 12px #000,0 0 3px #000}
+.top>.row,.top .brand,.top .crest,.top .mode,.top .gear{position:relative;z-index:2}
+.brand h1,.brand p{text-shadow:0 2px 14px #000,0 0 4px #000}
 .crest{width:78px;height:78px;flex:none}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:grid;place-items:center;z-index:40;padding:16px}
 .modal .box{background:#161616;border:1px solid #3a3322;border-radius:16px;padding:16px;max-width:720px;width:100%;max-height:86vh;overflow:auto}
@@ -145,7 +145,7 @@ html[data-font="xl"]{font-size:20px}
   <div class="top">
     <div class="cine" aria-hidden="true">
       <img class="cine-still" src="must-community.jpg" alt="">
-      <video id="cineVid" muted autoplay loop playsinline preload="auto" poster="must-community.jpg">
+      <video id="cineVid" muted autoplay loop playsinline preload="auto" poster="must-community.jpg" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture disableRemotePlayback>
         <source src="must-hero.mp4" type="video/mp4">
       </video>
     </div>
