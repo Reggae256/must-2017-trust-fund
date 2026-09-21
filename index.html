@@ -7,8 +7,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>MUST Graduates 2017 Trust Fund</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -1131,33 +1129,16 @@ function printFlyer(){ downloadFlyer(); }
 
 function fitFlyerOnOnePage(canvas, name){
   const JsPDF=(window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-  if(JsPDF){
-    const pdf=new JsPDF({orientation:"landscape", unit:"mm", format:"a4", compress:true});
-    const pw=pdf.internal.pageSize.getWidth();
-    const ph=pdf.internal.pageSize.getHeight();
-    const pad=6;
-    const maxW=pw-pad*2, maxH=ph-pad*2;
-    let w=maxW, h=w*(canvas.height/canvas.width);
-    if(h>maxH){ h=maxH; w=h*(canvas.width/canvas.height); }
-    pdf.addImage(canvas.toDataURL("image/jpeg",0.95), "JPEG", (pw-w)/2, (ph-h)/2, w, h, "flyer", "FAST");
-    openFile(pdf.output("blob"), name);
-    return;
-  }
-  if(typeof html2pdf!=="undefined"){
-    const img=document.createElement("img");
-    img.src=canvas.toDataURL("image/jpeg",0.95);
-    img.style.width="100%";
-    const wrap=document.createElement("div");
-    wrap.appendChild(img);
-    html2pdf().set({
-      margin:6, filename:name,
-      image:{type:"jpeg",quality:0.95},
-      html2canvas:{scale:1,backgroundColor:"#f5c400"},
-      jsPDF:{unit:"mm",format:"a4",orientation:"landscape"}
-    }).from(wrap).save();
-    return;
-  }
-  alert("PDF tool did not load. Refresh the page once.");
+  if(!JsPDF){ alert("PDF tool did not load. Refresh the page once."); return; }
+  const pdf=new JsPDF({orientation:"landscape", unit:"mm", format:"a4", compress:true});
+  const pw=pdf.internal.pageSize.getWidth();
+  const ph=pdf.internal.pageSize.getHeight();
+  const pad=6;
+  const maxW=pw-pad*2, maxH=ph-pad*2;
+  let w=maxW, h=w*(canvas.height/canvas.width);
+  if(h>maxH){ h=maxH; w=h*(canvas.width/canvas.height); }
+  pdf.addImage(canvas.toDataURL("image/jpeg",0.95), "JPEG", (pw-w)/2, (ph-h)/2, w, h, "flyer", "FAST");
+  openFile(pdf.output("blob"), name);
 }
 
 function grabFlyerCanvas(el){
