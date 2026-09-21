@@ -47,19 +47,19 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .legend span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin:4px 0}
 .dot{width:10px;height:10px;border-radius:50%}
 .photo{width:72px;height:72px;border-radius:12px;object-fit:cover;border:2px solid var(--gold);background:#111}
-.flyer-wrap{background:#f5c400;padding:14px}
-.flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:10px 8px;font-size:.82rem}
-.flyer h2{margin:0;text-align:center;color:#f5c400;font-size:1.2rem;letter-spacing:.04em}
-.flyer .sub{text-align:center;color:#eee;margin:4px 0 8px;font-size:.78rem}
-.flyer .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:3px 10px;font-size:.72rem}
-.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.flyer-wrap{background:#f5c400;padding:16px}
+.flyer{background:#0a0a0a;color:#fff;border:4px solid #d4af37;padding:14px 12px;font-size:1.12rem}
+.flyer h2{margin:0;text-align:center;color:#f5c400;font-size:1.85rem;letter-spacing:.04em;line-height:1.15}
+.flyer .sub{text-align:center;color:#eee;margin:8px 0 12px;font-size:1.08rem;line-height:1.35}
+.flyer .email-pill{display:inline-block;background:#fff;color:#111;border-radius:999px;padding:5px 14px;font-size:1.02rem;font-weight:700}
+.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .flyer table{width:100%;border-collapse:collapse;table-layout:fixed;background:#f5e6a8;color:#111}
-.flyer th{background:#111;color:#fff;font-size:.68rem;padding:4px 5px}
-.flyer td{padding:3px 5px;border-bottom:1px solid #e0d08a;font-size:.72rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.flyer td:first-child,.flyer th:first-child{width:28px}
-.flyer td:last-child,.flyer th:last-child{width:72px;text-align:right}
-.flyer .bar{background:#111;color:#f5c400;text-align:center;padding:10px;margin-top:8px;font-weight:700;font-size:1rem}
-.flyer .legend-box{background:#fff;color:#111;padding:10px;margin-top:8px;font-size:.9rem}
+.flyer th{background:#111;color:#fff;font-size:1rem;padding:8px 8px;letter-spacing:.03em}
+.flyer td{padding:7px 8px;border-bottom:1px solid #e0d08a;font-size:1.05rem;font-weight:700;line-height:1.25;overflow:visible;white-space:normal;word-break:break-word}
+.flyer td:first-child,.flyer th:first-child{width:42px}
+.flyer td:last-child,.flyer th:last-child{width:118px;text-align:right}
+.flyer .bar{background:#111;color:#f5c400;text-align:center;padding:14px 10px;margin-top:12px;font-weight:800;font-size:1.28rem;line-height:1.35}
+.flyer .legend-box{background:#fff;color:#111;padding:14px;margin-top:12px;font-size:1.12rem;line-height:1.45;font-weight:700}
 .brand h1{margin:0;font-size:clamp(1.35rem,3vw,2rem);color:var(--gold2);letter-spacing:.02em}
 .brand p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
 .mode{display:flex;background:#000;border:1px solid #333;border-radius:999px;overflow:hidden}
@@ -1129,7 +1129,7 @@ function printFlyer(){
   const w=window.open("","flyerprint");
   if(!w){ alert("Allow popups once to print"); return; }
   w.document.write(`<!DOCTYPE html><html><head><title>Flyer</title>
-    <style>body{margin:12px;font-family:Arial,sans-serif}.flyer-wrap{background:#f5c400;padding:12px}.flyer{background:#0a0a0a;color:#fff;border:3px solid #d4af37;padding:12px}h2{color:#f5c400;text-align:center}table{width:100%;background:#f5e6a8;color:#111;border-collapse:collapse}th{background:#111;color:#fff}td{padding:4px;border-bottom:1px solid #e0d08a}.bar{background:#111;color:#f5c400;text-align:center;padding:8px;margin-top:8px}.legend-box{background:#fff;color:#111;padding:8px;margin-top:8px}.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}</style>
+    <style>body{margin:10px;font-family:Arial,sans-serif}.flyer-wrap{background:#f5c400;padding:16px}.flyer{background:#0a0a0a;color:#fff;border:4px solid #d4af37;padding:14px;font-size:18px}h2{color:#f5c400;text-align:center;font-size:30px;margin:0}.sub{font-size:17px;text-align:center}.email-pill{font-size:16px;font-weight:700}table{width:100%;background:#f5e6a8;color:#111;border-collapse:collapse}th{background:#111;color:#fff;font-size:16px;padding:8px}td{padding:7px 8px;border-bottom:1px solid #e0d08a;font-size:17px;font-weight:700}.bar{background:#111;color:#f5c400;text-align:center;padding:14px;margin-top:10px;font-size:20px;font-weight:800}.legend-box{background:#fff;color:#111;padding:14px;margin-top:10px;font-size:18px;font-weight:700}.flyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}</style>
     </head><body>${node.outerHTML}<script>window.onload=function(){window.print();}<\/script></body></html>`);
   w.document.close();
 }
@@ -1138,10 +1138,10 @@ function downloadFlyer(){
   if(typeof html2pdf==="undefined"){ alert("Wait for the page to finish loading, then tap Save as PDF again"); return; }
   const name="MUST-2017-flyer-"+new Date().toISOString().slice(0,10)+".pdf";
   html2pdf().set({
-    margin:5,
+    margin:4,
     filename:name,
-    image:{type:"jpeg",quality:0.95},
-    html2canvas:{scale:1.5,backgroundColor:"#f5c400",windowWidth:1100,scrollX:0,scrollY:0},
+    image:{type:"jpeg",quality:0.98},
+    html2canvas:{scale:2,backgroundColor:"#f5c400",windowWidth:1400,scrollX:0,scrollY:0,useCORS:true},
     jsPDF:{unit:"mm",format:"a4",orientation:"landscape"},
     pagebreak:{mode:["avoid-all"]}
   }).from(node).outputPdf("blob").then(blob=>openFile(blob, name));
