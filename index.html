@@ -190,7 +190,17 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
   .flyer{page-break-inside:avoid}
 }
 
-.live-wrap{display:flex;flex-direction:column;height:min(62vh,560px);background:#0b141a;border:1px solid #1f3b4d;border-radius:16px;overflow:hidden}
+.live-wrap{display:flex;flex-direction:column;height:min(52vh,460px);background:#0b141a;border:1px solid #1f3b4d;border-radius:16px;overflow:hidden;position:relative}
+.live-wrap.max{height:min(88vh,820px)}
+.live-wrap.min{height:64px}
+.live-wrap.min .live-stream,.live-wrap.min .live-tools,.live-wrap.min .live-composer,.live-wrap.min .live-jump,.live-wrap.min .live-pin,.live-wrap.min .live-search{display:none}
+.live-sz{background:transparent;border:0;color:#e9edef;font-size:1.15rem;cursor:pointer;padding:2px 6px;line-height:1}
+.live-menu{display:flex;gap:6px;background:#1f2c34;border-radius:20px;padding:4px 8px;margin-top:4px}
+.live-menu button{background:#2a3942;border:0;color:#e9edef;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer}
+.live-emos{display:flex;gap:4px;margin-top:2px}
+.live-emos button{background:transparent;border:0;font-size:1.05rem;cursor:pointer;padding:0 2px}
+.live-row.on .live-b{outline:1px solid #00a884}
+
 .live-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#1f2c34;border-bottom:1px solid #2a3942}
 .live-top b{color:#e9edef;font-size:.95rem}
 .live-top small{color:#8696a0}
@@ -1765,8 +1775,9 @@ function liveChatBlock(isTreas){
     const day=liveDayLabel(m.at);
     const chip=day!==lastDay?`<div class="live-day">${esc(day)}</div>`:"";
     lastDay=day;
-    return `${chip}<div class="live-row ${mine?"me":"them"}" id="lv-${m.id}">
-      <div class="live-b">
+    const open=window._liveOpen===m.id;
+    return `${chip}<div class="live-row ${mine?"me":"them"} ${open?"on":""}" id="lv-${m.id}">
+      <div class="live-b" onclick="tapLive('${m.id}')">
         ${mine?"":`<div class="live-who">${esc(m.from)}</div>`}
         ${m.fwd?`<div class="live-fwd">Forwarded</div>`:""}
         ${reply?`<div class="live-reply">${esc(reply.from)}: ${esc((reply.text||"").slice(0,80))}</div>`:""}
@@ -1775,16 +1786,20 @@ function liveChatBlock(isTreas){
         <div class="live-meta">${new Date(m.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${m.pinned?" · pinned":""}${m.kind&&m.kind!=="text"?" · "+m.kind:""}${mine?liveTicks(m):""}</div>
       </div>
       ${reacts?`<div class="live-reacts">${esc(reacts)}</div>`:""}
-      <div class="live-acts">
-        ${c.reply && me?`<button type="button" onclick="setLiveReply('${m.id}')">Reply</button>`:""}
-        ${c.react && me?`<button type="button" onclick="reactLive('${m.id}','👍')">👍</button><button type="button" onclick="reactLive('${m.id}','❤️')">❤️</button><button type="button" onclick="reactLive('${m.id}','😂')">😂</button>`:""}
-        ${c.star?`<button type="button" onclick="starLive('${m.id}')">★</button>`:""}
-        ${c.fwd?`<button type="button" onclick="fwdLive('${m.id}')">Forward</button>`:""}
-        <button type="button" onclick="copyLive('${m.id}')">Copy</button>
-        <button type="button" onclick="infoLive('${m.id}')">Info</button>
-        ${isTreas?`<button type="button" onclick="pinLive('${m.id}')">Pin</button><button type="button" onclick="delLive('${m.id}')">Delete</button>`:""}
-        ${!isTreas && c.deleteOwn && mine?`<button type="button" onclick="delLive('${m.id}')">Delete</button>`:""}
-      </div>
+      ${c.react && me?`<div class="live-emos">
+        <button type="button" onclick="event.stopPropagation();reactLive('${m.id}','👍')">👍</button>
+        <button type="button" onclick="event.stopPropagation();reactLive('${m.id}','❤️')">❤️</button>
+        <button type="button" onclick="event.stopPropagation();reactLive('${m.id}','😂')">😂</button>
+      </div>`:""}
+      ${open?`<div class="live-menu">
+        <button type="button" title="Copy" onclick="event.stopPropagation();copyLive('${m.id}')">⧉</button>
+        ${c.reply && me?`<button type="button" title="Reply" onclick="event.stopPropagation();setLiveReply('${m.id}')">↩</button>`:""}
+        ${c.fwd?`<button type="button" title="Forward" onclick="event.stopPropagation();fwdLive('${m.id}')">↪</button>`:""}
+        <button type="button" title="Info" onclick="event.stopPropagation();infoLive('${m.id}')">ⓘ</button>
+        ${c.star?`<button type="button" title="Star" onclick="event.stopPropagation();starLive('${m.id}')">★</button>`:""}
+        ${isTreas?`<button type="button" title="Pin" onclick="event.stopPropagation();pinLive('${m.id}')">📌</button>`:""}
+        ${(isTreas || (c.deleteOwn && mine))?`<button type="button" title="Delete" onclick="event.stopPropagation();delLive('${m.id}')">🗑</button>`:""}
+      </div>`:""}
     </div>`;
   }).join("") || `<p style="color:#8696a0;text-align:center;margin:auto">No live messages yet.</p>`;
   const locked=!canPostLive();
@@ -1792,11 +1807,15 @@ function liveChatBlock(isTreas){
   return `${isTreas?liveCtlCard():""}
   <div class="card" style="padding:10px">
     <h3>Live chat</h3>
-    <div class="live-wrap">
+    <div class="live-wrap ${window._liveSize==="max"?"max":window._liveSize==="min"?"min":""}">
       <div class="live-top">
         <div><b>MUST 2017 room</b><br><small>${c.on?"Live":"Paused by treasurer"} · messages last ${ttlLab}</small></div>
         <input class="live-search" placeholder="Search" value="${esc(window._liveQ||"")}" oninput="window._liveQ=this.value;render()"/>
         <small id="liveTyping">${c.showTyping?esc(typingLine()):""}</small>
+        <div>
+          <button type="button" class="live-sz" title="Minimize" onclick="setLiveSize('min')">▾</button>
+          <button type="button" class="live-sz" title="Expand" onclick="setLiveSize(window._liveSize==='max'?'':'max')">⛶</button>
+        </div>
       </div>
       ${pinned?`<div class="live-pin">📌 ${esc(pinned.from)}: ${esc((pinned.text||"").slice(0,90))}</div>`:""}
       <div class="live-stream" id="liveStream">${rows}</div><button type="button" class="live-jump" title="Latest" onclick="const s=document.getElementById('liveStream'); if(s) s.scrollTop=s.scrollHeight">↓</button>
@@ -1896,6 +1915,16 @@ function liveDayLabel(iso){
   if(diff===0) return "Today";
   if(diff===1) return "Yesterday";
   return d.toLocaleDateString(undefined,{weekday:"short", day:"numeric", month:"short", year:"numeric"});
+}
+
+function tapLive(id){
+  window._liveOpen = window._liveOpen===id ? "" : id;
+  render();
+}
+function setLiveSize(sz){
+  window._liveSize = sz||"";
+  render();
+  setTimeout(()=>{ const s=document.getElementById("liveStream"); if(s && sz!=="min") s.scrollTop=s.scrollHeight; },20);
 }
 function starLive(id){
   if(!chatCtl().star) return;
@@ -2219,7 +2248,17 @@ function printFlyer(){
     .bar{background:#111;color:#f5c400;text-align:center;padding:6px;margin-top:6px;font-weight:800;font-size:13px}
     .legend-box{background:#fff;color:#111;padding:6px 8px;margin-top:6px;font-size:11px;font-weight:700}
   
-.live-wrap{display:flex;flex-direction:column;height:min(62vh,560px);background:#0b141a;border:1px solid #1f3b4d;border-radius:16px;overflow:hidden}
+.live-wrap{display:flex;flex-direction:column;height:min(52vh,460px);background:#0b141a;border:1px solid #1f3b4d;border-radius:16px;overflow:hidden;position:relative}
+.live-wrap.max{height:min(88vh,820px)}
+.live-wrap.min{height:64px}
+.live-wrap.min .live-stream,.live-wrap.min .live-tools,.live-wrap.min .live-composer,.live-wrap.min .live-jump,.live-wrap.min .live-pin,.live-wrap.min .live-search{display:none}
+.live-sz{background:transparent;border:0;color:#e9edef;font-size:1.15rem;cursor:pointer;padding:2px 6px;line-height:1}
+.live-menu{display:flex;gap:6px;background:#1f2c34;border-radius:20px;padding:4px 8px;margin-top:4px}
+.live-menu button{background:#2a3942;border:0;color:#e9edef;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer}
+.live-emos{display:flex;gap:4px;margin-top:2px}
+.live-emos button{background:transparent;border:0;font-size:1.05rem;cursor:pointer;padding:0 2px}
+.live-row.on .live-b{outline:1px solid #00a884}
+
 .live-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#1f2c34;border-bottom:1px solid #2a3942}
 .live-top b{color:#e9edef;font-size:.95rem}
 .live-top small{color:#8696a0}
