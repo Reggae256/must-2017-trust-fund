@@ -268,11 +268,6 @@ function initFirebase(){
       try{ FB.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); }catch(e){}
       FB.auth.onAuthStateChanged(u=>{
         FB.user=u||null;
-        if(u){
-          authed=true;
-          if(mode!=="treasurer") mode="treasurer";
-          saveSess();
-        }
         if(typeof render==="function") try{ render(); }catch(err){}
       });
     }
@@ -458,12 +453,11 @@ function tagMsg(t){
 
 let mode="member", tab="home", authed=false, who="";
 const SESSKEY="must2017trust.session";
-function saveSess(){ try{ localStorage.setItem(SESSKEY, JSON.stringify({mode,tab,authed,who})); }catch(e){} }
+function saveSess(){ try{ sessionStorage.setItem(SESSKEY, JSON.stringify({mode,tab,authed,who})); }catch(e){} }
 function loadSess(){
   try{
-    const s=JSON.parse(localStorage.getItem(SESSKEY)||"null");
+    const s=JSON.parse(sessionStorage.getItem(SESSKEY)||"null");
     if(!s) return;
-    if(s.authed){ authed=true; mode=s.mode||"treasurer"; tab=s.tab||"backup"; }
     if(s.who) who=s.who;
   }catch(e){}
 }
