@@ -10,6 +10,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -237,7 +239,124 @@ function load(){
   return seed();
 }
 let DB=load();
-function save(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
+const MUST_FIREBASE={apiKey:"AIzaSyBJqm0uCUciJuySBxqScl9vRgtoIvJOW00",authDomain:"must-2017-trust.firebaseapp.com",projectId:"must-2017-trust",storageBucket:"must-2017-trust.firebasestorage.app",messagingSenderId:"933027548846",appId:"1:933027548846:web:fab72bcc6dec4370afe73f"}; /* public web config — security is Firestore rules */
+const FBKEY="must2017trust.fb";
+let FB={db:null,unsub:null,pushing:false,skip:false,ok:false,err:"",at:0};
+function loadFbCfg(){
+  try{
+    const local=JSON.parse(localStorage.getItem(FBKEY)||"null");
+    if(local && local.apiKey) return local;
+  }catch(e){}
+  return MUST_FIREBASE;
+}
+function saveFbCfg(cfg){
+  localStorage.setItem(FBKEY, JSON.stringify(cfg||{}));
+}
+function cloudPayload(){
+  const copy=JSON.parse(JSON.stringify(DB));
+  (copy.members||[]).forEach(m=>{ if(m.photo && String(m.photo).length>8000) m.photo=""; });
+  return copy;
+}
+function initFirebase(){
+  const cfg=loadFbCfg();
+  FB.ok=false; FB.err="";
+  if(!cfg || !cfg.apiKey || !cfg.projectId){ FB.err="not-linked"; return; }
+  if(typeof firebase==="undefined"){ FB.err="sdk"; return; }
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    FB.db=firebase.firestore();
+    FB.ok=true;
+    listenCloud();
+  }catch(e){ FB.err=String(e.message||e); }
+}
+function listenCloud(){
+  if(!FB.db) return;
+  if(FB.unsub) FB.unsub();
+  FB.unsub=FB.db.collection("ledger").doc("main").onSnapshot(snap=>{
+    if(FB.pushing) return;
+    if(!snap.exists) return;
+    const cloud=snap.data()||{};
+    const incoming=cloud.db;
+    if(!incoming || !incoming.members) return;
+    const cat=Number(cloud.updatedAt||0);
+    const lat=Number(DB.updatedAt||0);
+    if(cat && lat && cat<=lat) return;
+    FB.skip=true;
+    incoming.settings=Object.assign(defaultSettings(), incoming.settings||{});
+    incoming.notices=incoming.notices||[];
+    incoming.resets=incoming.resets||[];
+    incoming.pending=incoming.pending||[];
+    incoming.expenses=incoming.expenses||[];
+    incoming.chat=incoming.chat||[];
+    incoming.updatedAt=cat||Date.now();
+    DB=incoming;
+    localStorage.setItem(KEY, JSON.stringify(DB));
+    FB.at=cat; FB.skip=false;
+    if(typeof render==="function") try{ render(); }catch(e){}
+  }, err=>{ FB.err=err.message||String(err); FB.ok=false; });
+}
+function pushCloud(){
+  if(!FB.db || FB.skip) return;
+  DB.updatedAt=Date.now();
+  FB.pushing=true;
+  FB.db.collection("ledger").doc("main").set({
+    db: cloudPayload(),
+    updatedAt: DB.updatedAt,
+    note:"MUST 2017 trust fund"
+  }).then(()=>{ FB.at=DB.updatedAt; FB.err=""; }).catch(e=>{ FB.err=e.message||String(e); }).finally(()=>{ FB.pushing=false; });
+}
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(DB));
+  clearTimeout(save._t);
+  save._t=setTimeout(pushCloud, 500);
+}
+function cloudLabel(){
+  if(FB.ok) return "Live book — this device is linked. Other phones with the same link see new entries in a few seconds.";
+  if(FB.err==="not-linked") return "This phone only. Link Firebase on Treasurer → Backup to sync every device.";
+  if(FB.err==="sdk") return "Cloud tools did not load. Check internet and refresh.";
+  return FB.err ? ("Cloud error: "+FB.err) : "This phone only.";
+}
+function connectCloud(){
+  let raw=(document.getElementById("fbCfg")||{}).value||"";
+  raw=raw.trim();
+  try{
+    if(raw.startsWith("const ") || raw.indexOf("apiKey")>=0 && raw[0]!=="{"){
+      const a=raw.indexOf("{"), b=raw.lastIndexOf("}");
+      raw=raw.slice(a,b+1);
+    }
+    const cfg=JSON.parse(raw);
+    if(!cfg.apiKey || !cfg.projectId) throw new Error("Need apiKey and projectId");
+    saveFbCfg(cfg);
+    initFirebase();
+    setTimeout(pushCloud, 800);
+    alert(FB.ok ? "Linked. Keep this page open once, then open the same site on other phones." : "Saved, but not live yet: "+(FB.err||"refresh"));
+    render();
+  }catch(e){ alert("Could not read that config. Paste the firebaseConfig object from Firebase."); }
+}
+function pullCloudNow(){
+  if(!FB.db){ alert("Link Firebase first"); return; }
+  FB.db.collection("ledger").doc("main").get().then(snap=>{
+    if(!snap.exists){ pushCloud(); alert("Cloud book was empty. Uploaded this phone's book."); return; }
+    const cloud=snap.data();
+    if(cloud && cloud.db){
+      FB.skip=true;
+      DB=cloud.db;
+      DB.settings=Object.assign(defaultSettings(), DB.settings||{});
+      DB.updatedAt=cloud.updatedAt||Date.now();
+      localStorage.setItem(KEY, JSON.stringify(DB));
+      FB.skip=false; FB.at=DB.updatedAt;
+      render();
+      alert("Pulled the live book onto this phone.");
+    }
+  }).catch(e=>alert(e.message||e));
+}
+function pushCloudNow(){
+  if(!FB.db){ alert("Link Firebase first"); return; }
+  pushCloud();
+  alert("Uploaded this phone's book to the live ledger.");
+}
+initFirebase();
+
 
 function monthsBetween(from, to){
   return (to.getFullYear()-from.getFullYear())*12 + (to.getMonth()-from.getMonth()) + 1;
@@ -424,6 +543,7 @@ function memberHome(st){
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
     return `<div class="card"><h3>Open your record</h3>
+      <p style="font-size:.9rem;color:var(--muted)">${cloudLabel()}</p>
       <p>Type your name exactly as on the register. You will only see your own balance.</p>
       <input list="nm" id="whoBox" placeholder="Your full name"/>
       <datalist id="nm">${names}</datalist>
@@ -917,13 +1037,13 @@ function showStmt(id){
       <button class="btn ghost" onclick="filterStmt(${id})">Filter period</button>
     </div>
     <div class="row" style="margin:8px 0">
-      <button class="btn gold" onclick="printStmt()">Print statement</button>
-      <button class="btn ghost" onclick="downloadStmt('${esc(m.name)}')">Download statement</button>
+      <button class="btn gold" onclick="printStmt(${id})">Print statement</button>
+      <button class="btn ghost" onclick="downloadStmt(${id})">Download statement</button>
     </div>
     <div id="stRows"><table><thead><tr><th>When</th><th>Note</th><th>Amount</th></tr></thead>
     <tbody>${memberLines(m).map(t=>`<tr><td>${esc(String(t.at).slice(0,16))}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")}</tbody></table></div>`);
 }
-function printStmt(){ window.print(); }
+function printStmtLegacy(){ printStmt(); }
 function openFile(blob, filename){
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -938,26 +1058,73 @@ function openFile(blob, filename){
 }
 function htmlToOpen(html, filename){
   const pdfName=filename.replace(/\.html$/i,".pdf");
+  const wrap=document.createElement("div");
+  wrap.innerHTML=html;
+  wrap.style.cssText="position:fixed;left:-9999px;top:0;background:#fff;color:#111;width:760px";
+  document.body.appendChild(wrap);
+  const finishBlob=blob=>{ wrap.remove(); openFile(blob, pdfName); };
+  const fail=()=>{ wrap.remove(); openFile(new Blob([html],{type:"text/html"}), filename); };
+  const JsPDF=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+  if(window.html2canvas && JsPDF){
+    window.html2canvas(wrap.firstElementChild||wrap,{scale:2,backgroundColor:"#ffffff",useCORS:true}).then(canvas=>{
+      const pdf=new JsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+      const pw=pdf.internal.pageSize.getWidth();
+      const ph=pdf.internal.pageSize.getHeight();
+      const pad=10;
+      let w=pw-pad*2, h=w*canvas.height/canvas.width;
+      if(h>ph-pad*2){ h=ph-pad*2; w=h*canvas.width/canvas.height; }
+      pdf.addImage(canvas.toDataURL("image/jpeg",0.95),"JPEG",pad,pad,w,h);
+      finishBlob(pdf.output("blob"));
+    }).catch(fail);
+    return;
+  }
   if(typeof html2pdf!=="undefined"){
-    const wrap=document.createElement("div");
-    wrap.innerHTML=html;
-    wrap.style.cssText="position:fixed;left:-9999px;top:0;background:#fff;color:#111;padding:16px;width:700px";
-    document.body.appendChild(wrap);
     html2pdf().set({
       margin:10, filename:pdfName,
       image:{type:"jpeg",quality:0.98},
       html2canvas:{scale:2,backgroundColor:"#ffffff"},
       jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
-    }).from(wrap).outputPdf("blob").then(blob=>{
-      wrap.remove(); openFile(blob, pdfName);
-    }).catch(()=>{ wrap.remove(); openFile(new Blob([html],{type:"text/html"}), filename); });
-  } else openFile(new Blob([html],{type:"text/html"}), filename);
+    }).from(wrap.firstElementChild||wrap).outputPdf("blob").then(finishBlob).catch(fail);
+    return;
+  }
+  fail();
 }
-function downloadStmt(name){
-  const box=document.getElementById("stRows");
-  const html="<!DOCTYPE html><html><body style='font-family:sans-serif;padding:16px'><h2>"+esc(name||"Statement")+"</h2>"+(box?box.innerHTML:"")+"</body></html>";
-  htmlToOpen(html,(name||"statement")+"-statement.html");
+function statementHtml(id){
+  const m=DB.members.find(x=>x.id===id); if(!m) return "";
+  const cl=classify(m,new Date());
+  const now=new Date();
+  const lines=memberLines(m);
+  const rows=lines.map(t=>`<tr><td>${esc(String(t.at).slice(0,16))}</td><td>${esc(t.type)}</td><td style="text-align:right">${ugx(t.amount)}</td></tr>`).join("");
+  return `<div style="font-family:Arial,sans-serif;color:#111;background:#fff;padding:18px;width:720px">
+    <h2 style="margin:0 0 6px;color:#5c4300">MUST GRADUATES 2017 TRUST FUND</h2>
+    <h3 style="margin:0 0 10px">Statement · ${esc(m.name)}</h3>
+    <p style="margin:0 0 8px">Role: ${esc(m.role||"—")} · Phone: ${esc(m.phone||"—")}<br>
+    Paid: <b>${ugx(m.paid)}</b> · Remaining to ${now.toLocaleString("en-UG",{month:"long",year:"numeric"})}: <b>${ugx(cl.remaining)}</b><br>
+    Months behind: ${cl.monthsBehind||0} · Expected to date: ${ugx(cl.expectedNow)}</p>
+    <table style="width:100%;border-collapse:collapse" border="1" cellspacing="0" cellpadding="6">
+      <thead><tr style="background:#111;color:#fff"><th align="left">When</th><th align="left">Note</th><th align="right">Amount</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="margin-top:14px;font-size:12px">Pay to Stanbic ${BANK} · ${EMAIL}</p>
+  </div>`;
 }
+function printStmt(id){
+  const html=id?statementHtml(id):(document.getElementById("stRows")||{}).innerHTML;
+  if(!html){ alert("Open a statement first"); return; }
+  const w=window.open("","stmtprint","width=800,height=900");
+  if(!w){ alert("Allow popups once to print"); return; }
+  w.document.write("<!DOCTYPE html><html><head><title>Statement</title></head><body>"+html+"<script>window.onload=function(){window.focus();window.print();}<\/script></body></html>");
+  w.document.close();
+}
+function downloadStmt(id){
+  const m=DB.members.find(x=>x.id==id); if(!m){ alert("Open a statement first"); return; }
+  const html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+esc(m.name)+" statement</title></head><body style='margin:0;background:#fff'>"+statementHtml(id)+"</body></html>";
+  const file=(m.name||"member").replace(/[^\w\- ]+/g,"_").replace(/\s+/g,"-")+"-statement.html";
+  openFile(new Blob([html],{type:"text/html;charset=utf-8"}), file);
+  const w=window.open("","stmtfile","width=820,height=920");
+  if(w){ w.document.write(html); w.document.close(); }
+}
+
 function memberLines(m){
   const lines=[];
   if(m.fee) lines.push({at:"2025-01",type:"Membership fee",amount:m.fee});
@@ -968,16 +1135,7 @@ function memberLines(m){
   if(!lines.length) lines.push({at:"—",type:"No payment recorded yet. Expected to this month "+ugx(classify(m,new Date()).expectedNow),amount:0});
   return lines;
 }
-function downloadMemberStmt(id){
-  const m=DB.members.find(x=>x.id===id); if(!m) return;
-  const cl=classify(m,new Date());
-  const lines=memberLines(m);
-  const rows=lines.map(t=>`<tr><td>${esc(String(t.at).slice(0,16))}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("");
-  const html=`<!DOCTYPE html><html><body style="font-family:sans-serif;padding:16px"><h2>${esc(m.name)}</h2>
-    <p>Paid ${ugx(m.paid)} · Remaining to this month ${ugx(cl.remaining)} · ${cl.monthsBehind||0} month(s) behind</p>
-    <table border="1" cellspacing="0" cellpadding="6"><tr><th>When</th><th>Note</th><th>Amount</th></tr>${rows}</table></body></html>`;
-  htmlToOpen(html, m.name+"-statement.html");
-}
+function downloadMemberStmt(id){ downloadStmt(id); }
 function filterStmt(id){
   const m=DB.members.find(x=>x.id===id);
   const a=document.getElementById("stFrom").value, b=document.getElementById("stTo").value;
@@ -1263,11 +1421,24 @@ function flyerView(st){
 }
 
 function backupView(){
+  const cfg=loadFbCfg()||{};
   return `<div class="card">
+    <h3>Live sync (all phones)</h3>
+    <p>${cloudLabel()}</p>
+    <p>One-time setup (free): open <b>https://console.firebase.google.com</b> → Add project → name it <b>must-2017-trust</b> → Build → Firestore Database → Create database → Start in <b>test mode</b> (rules allow read/write for 30 days; we can lock later). Then Project settings → Your apps → Web app → copy the <b>firebaseConfig</b> object and paste it below.</p>
+    <textarea id="fbCfg" rows="8" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'>${esc(cfg.apiKey?JSON.stringify(cfg,null,2):"")}</textarea>
+    <div class="row">
+      <button class="btn gold" onclick="connectCloud()">Link this site to the live book</button>
+      <button class="btn ghost" onclick="pushCloudNow()">Upload this phone now</button>
+      <button class="btn ghost" onclick="pullCloudNow()">Download live book now</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--muted)">After linking once on the treasurer phone, open the same Vercel link on any member phone. They do not paste keys. They only need the site. The first treasurer device that links holds the keys in this browser — also paste the same config on a second official phone if that person records payments.</p>
+  </div>
+  <div class="card">
     <h3>Database</h3>
     <p>Contributions stay <b>open-ended</b>. There is no 240,000 finish line. Expected = months since Jan 2025 × 10,000, unless you tap Pause.</p>
-    <p><b>Internal:</b> saved in this browser (works offline).</p>
-    <p><b>External:</b> download JSON and keep it on Google Drive or email ${EMAIL}.</p>
+    <p><b>Internal:</b> saved in this browser (works offline, then syncs when online).</p>
+    <p><b>External live book:</b> Firebase above. JSON download is still the emergency copy for Drive / email ${EMAIL}.</p>
     <div class="row">
       <button class="btn gold" onclick="downloadBackup()">Download JSON backup</button>
       <button class="btn ghost" onclick="document.getElementById('imp').click()">Import JSON backup</button>
