@@ -662,9 +662,19 @@ function memberHome(st){
   const found = who ? DB.members.map(m=>({m,...classify(m,new Date())})).find(x=>x.m.name.toLowerCase()===who.toLowerCase()) : null;
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
-    const opts=DB.members.slice().sort((a,b)=>a.name.localeCompare(b.name))
-      .map(m=>`<option value="${m.id}" ${String(window._signId)===String(m.id)?"selected":""}>${esc(m.name)}</option>`).join("");
+    const registered=DB.members.filter(m=>m.active).slice().sort((a,b)=>a.name.localeCompare(b.name));
+    const opts=registered.map(m=>`<option value="${m.id}" ${String(window._signId)===String(m.id)?"selected":""}>${esc(m.name)}</option>`).join("");
     const pending=DB.members.find(x=>String(x.id)===String(window._signId||""));
+    if(!pending && window._typeSign){
+      return `<div class="card"><h3>Sign in</h3>
+        <label>Type your registered name</label>
+        <input id="whoBox" autocomplete="off" placeholder="Full name as on the register"/>
+        <div class="row" style="margin-top:10px">
+          <button class="btn gold" onclick="typeSignName()">Continue</button>
+          <button class="btn ghost" onclick="window._typeSign=false;render()">Back to list</button>
+        </div>
+      </div>`;
+    }
     if(!pending){
       return `<div class="card"><h3>Sign in</h3>
         <label>Your name</label>
@@ -672,6 +682,7 @@ function memberHome(st){
           <option value="">Tap to pick your name</option>
           ${opts}
         </select>
+        <p style="margin-top:14px"><button class="btn ghost" style="font-size:.8rem;padding:6px 10px" onclick="window._typeSign=true;render()">Type name instead</button></p>
       </div>`;
     }
     return `<div class="card"><h3>Sign in</h3>
@@ -680,7 +691,7 @@ function memberHome(st){
       <input id="whoCode" autocomplete="off" autocapitalize="characters" placeholder="5-character code"/>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" onclick="confirmSignCode()">Open my account</button>
-        <button class="btn ghost" onclick="window._signId='';render()">Change name</button>
+        <button class="btn ghost" onclick="window._signId='';window._typeSign=false;render()">Change name</button>
       </div>
     </div>
     `;
@@ -748,9 +759,26 @@ function filterSignNames(){
   }).slice(0,20);
   out.innerHTML=hits.map(m=>`<button type="button" class="name-hint" onclick="pickSignId(${m.id})">${esc(m.name)}</button>`).join("");
 }
+
+function typeSignName(){
+  const name=((document.getElementById("whoBox")||{}).value||"").trim();
+  if(!name){ alert("Type your name"); return; }
+  const hits=DB.members.filter(m=>m.active && (m.name||"").toLowerCase()===name.toLowerCase());
+  const loose=hits.length?hits:DB.members.filter(m=>m.active && (m.name||"").toLowerCase().indexOf(name.toLowerCase())>=0);
+  if(!loose.length){ alert("That registered name was not found"); return; }
+  if(loose.length>1){
+    openModal("<h3>Which name?</h3>"+loose.map(m=>`<button class="btn ghost" style="display:block;width:100%;margin:6px 0;text-align:left" onclick="chooseSignName(${m.id});closeModal()">${esc(m.name)}</button>`).join(""));
+    return;
+  }
+  chooseSignName(loose[0].id);
+}
+
 function chooseSignName(id){
   if(!id){ window._signId=""; render(); return; }
+  const m=DB.members.find(x=>String(x.id)===String(id));
+  if(!m || !m.active){ alert("Only registered members can sign in this way"); return; }
   window._signId=id;
+  window._typeSign=false;
   render();
 }
 function pickSignId(id){ chooseSignName(id); }
