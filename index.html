@@ -146,6 +146,7 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#666;vertical-align:middle}
 .live-dot.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
 .live-dot.off{background:#e11d48;box-shadow:0 0 8px #e11d48}
+.live-n{margin-left:8px;font-size:.8rem;color:var(--muted);vertical-align:middle}
 .exp-head{background:#111;color:#f5d15a;font-weight:700;padding:8px 12px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;letter-spacing:.04em;text-transform:uppercase;font-size:.75rem}
 .exp-tick{border-radius:0 0 10px 10px;height:180px}
 .exp-row{padding:8px 12px;border-bottom:1px solid #2a2a2a;font-size:.9rem}
@@ -566,7 +567,7 @@ function applyUi(){
   document.documentElement.setAttribute("data-theme", s.theme||"dark");
   document.documentElement.setAttribute("data-font", s.font||"md");
   const foot=document.getElementById("foot");
-  if(foot) foot.innerHTML=`<span class="live-dot ${membersOnline()?"on":"off"}"></span>`;
+  if(foot) foot.innerHTML=footerLiveHtml();
 }
 document.addEventListener("click",e=>{
   if(!e.target.closest(".gear") && !e.target.closest("#uiMenu")){
@@ -656,9 +657,7 @@ function memberHome(st){
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
     return `<div class="card"><h3>Sign in to your account</h3>
-      <p style="font-size:.9rem;color:var(--muted)">${cloudLabel()}</p>
-      <p>You will only see your own balance. Sign in with your name, phone ending, or the code from the treasurer.</p>
-      <input list="nm" id="whoBox" placeholder="Name or phone ending"/>
+      <input list="nm" id="whoBox" placeholder="Name, phone ending, or code"/>
       <datalist id="nm">${names}</datalist>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" onclick="openMyStatus()">Open my status</button>
@@ -1436,23 +1435,25 @@ function treasurerDisplayName(){
   }
   return (DB.settings.treasurer && DB.settings.treasurer.name) || "Atuha Reggae";
 }
-function membersOnline(){
+function liveSessions(){
   const now=Date.now();
-  const tname=String(treasurerDisplayName()||"atuha reggae").toLowerCase();
-  const isTreas=n=>{
-    n=String(n||"").toLowerCase();
-    return !n || n===tname || /atuha\s*reggae/.test(n) || isTreasurerName(n);
-  };
-  const list=(window._presence||[]).filter(p=>{
-    if(now-Number(p.at||0)>=120000) return false;
-    if(p.kind==="treasurer" || p.kind==="visitor") return false;
-    if(!p.name) return false;
-    if(isTreas(p.name)) return false;
-    return p.kind==="member";
-  });
-  if(list.length) return true;
-  if(mode==="member" && who && !isTreas(who)) return true;
-  return false;
+  return (window._presence||[]).filter(p=>now-Number(p.at||0)<120000 && p.kind && p.kind!=="visitor");
+}
+function memberSessions(){
+  return liveSessions().filter(p=>p.kind==="member" && p.name && !isTreasurerName(p.name) && !/atuha\s*reggae/i.test(p.name||""));
+}
+function membersOnline(){
+  if(mode==="treasurer") return memberSessions().length>0;
+  return liveSessions().length>0;
+}
+function footerLiveHtml(){
+  if(mode==="treasurer"){
+    const n=memberSessions().length;
+    const d=liveSessions().length;
+    return `<span class="live-dot ${n?"on":"off"}"></span>`+(n?`<span class="live-n">${n} member${n>1?"s":""} · ${d} device${d!==1?"s":""}</span>`:`<span class="live-n">0</span>`);
+  }
+  const d=liveSessions().length;
+  return `<span class="live-dot ${d?"on":"off"}"></span>`+(d?`<span class="live-n">${d} online</span>`:`<span class="live-n">0</span>`);
 }
 function isTreasurerName(name){
   const t=treasurerDisplayName().toLowerCase();
@@ -1465,7 +1466,7 @@ function presenceId(){
 }
 function beatPresence(){
   const kind=(mode==="treasurer" || isTreasurerName(who))?"treasurer":(who?"member":"visitor");
-  const rec={id:presenceId(), name: mode==="treasurer"?treasurerDisplayName():(who||""), kind, at:Date.now()};
+  const rec={id:presenceId(), name: mode==="treasurer"?treasurerDisplayName():(who||""), kind, at:Date.now(), typingTo:window._typingTo||"", typingAt:window._typingAt||0};
   window._presence=window._presence||[];
   const i=window._presence.findIndex(p=>p.id===rec.id);
   if(i>=0) window._presence[i]=rec; else window._presence.push(rec);
@@ -1483,7 +1484,8 @@ function listenPresence(){
       const foot=document.getElementById("foot");
       if(foot){
         const on=membersOnline();
-        foot.innerHTML=`<span class="live-dot ${on?"on":"off"}"></span>`;
+        foot.innerHTML=footerLiveHtml();
+        const tl=document.getElementById("typingLine"); if(tl) tl.textContent=typingLine();
       }
     }, ()=>{});
   }catch(e){}
@@ -1519,7 +1521,8 @@ function chatView(isTreas){
       ${DB.members.filter(m=>m.active).map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("")}
       ${isTreas?"":`<option value="Treasurer">Treasurer only</option>`}
     </select>
-    <label>Message</label><textarea id="chatText" rows="3" placeholder="Group notice, or a private line to one member."></textarea>
+    <label>Message</label><textarea id="chatText" rows="3" placeholder="Group notice, or a private line to one member." oninput="noteTyping()"></textarea>
+    <p id="typingLine" style="min-height:1.2em;color:var(--gold);font-size:.9rem">${esc(typingLine())}</p>
     <div class="row" style="margin-top:10px">
       <button class="btn gold" onclick="postChat()">Send</button>
       ${isTreas?`<button class="btn ghost" onclick="downloadChatSummary()">Download chat summary</button>`:""}
@@ -1529,6 +1532,7 @@ function chatView(isTreas){
     <div class="bubble ${c.role==='system'||c.private?'official':''}">
       <div class="tag">${esc(c.to||"Everyone")} · ${c.private||tagMsg(c.text)==="benefit"?"confidential":tagMsg(c.text)}</div>
       <b>${esc(c.from)}</b> <small>${new Date(c.at).toLocaleString()}</small>
+      ${isTreas?`<button class="btn danger" style="float:right" onclick="delChat('${esc(c.id||c.at)}')">✕</button>`:""}
       <div>${esc(c.text)}</div>
     </div>`).join("")}</div>`;
 }
@@ -1540,6 +1544,34 @@ function summarizeChat(){
   return `<p><b>${human.length}</b> member messages · payments ${bags.payment} · benefits ${bags.benefit} · complaints ${bags.complaint} · other ${bags.social}</p>
     ${flagged.map(c=>`<div>• <b>${esc(c.from)}</b> → ${esc(c.to)} <span class="pill wait">${tagMsg(c.text)}</span> ${esc(c.text)}</div>`).join("")||"<p>No flagged messages yet.</p>"}`;
 }
+
+function typingLine(){
+  const now=Date.now();
+  const mine=(mode==="treasurer"?treasurerDisplayName():who||"").toLowerCase();
+  const names=[...new Set((window._presence||[]).filter(p=>
+    (p.typingTo==="Everyone" || !p.typingTo || p.typingTo==="Everyone") &&
+    Number(p.typingAt||0) && now-Number(p.typingAt)<5000 &&
+    p.name && String(p.name).toLowerCase()!==mine
+  ).map(p=>p.name))];
+  if(!names.length) return "";
+  return names.join(", ")+" typing…";
+}
+function noteTyping(){
+  const to=(document.getElementById("chatTo")||{}).value||"Everyone";
+  window._typingTo=to;
+  window._typingAt=Date.now();
+  try{ beatPresence(); }catch(e){}
+  const el=document.getElementById("typingLine");
+  if(el) el.textContent=typingLine();
+}
+function delChat(id){
+  if(mode!=="treasurer"){ alert("Only the treasurer can delete chat"); return; }
+  if(!needPin()) return;
+  if(!confirm("Delete this message?")) return;
+  DB.chat=(DB.chat||[]).filter(c=>String(c.id||c.at)!==String(id));
+  save(); render();
+}
+
 function postChat(){
   const from=(document.getElementById("chatFrom").value||who||"").trim();
   const text=(document.getElementById("chatText").value||"").trim();
@@ -1548,7 +1580,7 @@ function postChat(){
   const kind=tagMsg(text);
   const priv=to!=="Everyone" || kind==="benefit";
   const fromName=mode==="treasurer"?treasurerDisplayName():from;
-  DB.chat.push({from:fromName,to,text,at:new Date().toISOString(),role:mode==="treasurer"||to==="Executives"?"official":"member",private:priv,confidential:kind==="benefit"||to==="Treasurer"||to==="Executives"});
+  DB.chat.push({id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),from:fromName,to,text,at:new Date().toISOString(),role:mode==="treasurer"||to==="Executives"?"official":"member",private:priv,confidential:kind==="benefit"||to==="Treasurer"||to==="Executives"}); window._typingTo=""; window._typingAt=0;
   save(); render();
 }
 function downloadChatSummary(){
