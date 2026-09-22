@@ -145,6 +145,7 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .pay-pill{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:10px 12px;margin:6px 6px 0 0;cursor:pointer;font-weight:700;border:0}
 .pay-row{display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto;padding:6px 0 4px;-webkit-overflow-scrolling:touch}
 .pay-logo{flex:1 1 0;min-width:90px;max-width:160px;background:transparent;border:0;padding:4px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pay-logo.on-white{background:#fff;border-radius:12px;padding:8px 10px}
 .pay-logo img{height:48px;width:auto;max-width:100%;object-fit:contain;display:block}
 .pay-logo span{font-size:.72rem;color:#111;font-weight:700;text-align:center}
 
@@ -2581,7 +2582,7 @@ function payLogoSrc(p){
 function payLogoRow(pays){
   return `<div class="pay-row">`+pays.map(p=>{
     const src=payLogoSrc(p);
-    return `<button type="button" class="pay-logo" onclick="openPay('${p.id}')" title="${esc(p.name)}">${src?`<img alt="${esc(p.name)}" src="${src}"/>`:`<span>${esc(p.name)}</span>`}</button>`;
+    return `<button type="button" class="pay-logo ${p.id==="airtel"?"on-white":""}" onclick="openPay('${p.id}')" title="${esc(p.name)}">${src?`<img alt="${esc(p.name)}" src="${src}"/>`:`<span>${esc(p.name)}</span>`}</button>`;
   }).join("")+`</div>`;
 }
 function howPayView(isTreas){
