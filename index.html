@@ -127,7 +127,7 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .gate{min-height:70vh;display:grid;place-items:center;padding:24px}
 .gate-box{width:min(460px,100%);background:var(--panel);border:1px solid #2c2618;border-radius:24px;padding:28px;text-align:center}
 .hidden{display:none}
-footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:18px}
+footer{text-align:center;color:var(--ink);font-size:.9rem;margin-top:18px;padding:14px 10px 22px;border-top:1px solid var(--line)}
 .gear{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:8px 12px;font:inherit;cursor:pointer}
 .menu-pop{position:absolute;right:16px;top:86px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;z-index:30;min-width:230px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
 .eye{border:0;background:transparent;cursor:pointer;font-size:1.1rem}
@@ -146,7 +146,9 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#666;vertical-align:middle}
 .live-dot.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
 .live-dot.off{background:#e11d48;box-shadow:0 0 8px #e11d48}
-.live-n{margin-left:8px;font-size:.8rem;color:var(--muted);vertical-align:middle}
+.live-n{margin-left:8px;font-size:.9rem;color:var(--ink);vertical-align:middle;font-weight:700}
+.name-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;max-height:280px;overflow:auto}
+.name-pick{font-size:.85rem}
 .exp-head{background:#111;color:#f5d15a;font-weight:700;padding:8px 12px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;letter-spacing:.04em;text-transform:uppercase;font-size:.75rem}
 .exp-tick{border-radius:0 0 10px 10px;height:180px}
 .exp-row{padding:8px 12px;border-bottom:1px solid #2a2a2a;font-size:.9rem}
@@ -213,7 +215,7 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
   </div>
   <div class="nav noprint" id="nav"></div>
   <div id="view"></div>
-  <footer class="noprint" id="foot"></footer>
+  <footer id="foot"><span class="live-dot off"></span><span class="live-n">0</span> © 2026 MUST Education Graduates 2017</footer>
   <div id="uiMenu"></div>
   <div id="modal"></div>
 </div>
@@ -656,9 +658,11 @@ function memberHome(st){
   const found = who ? DB.members.map(m=>({m,...classify(m,new Date())})).find(x=>x.m.name.toLowerCase()===who.toLowerCase()) : null;
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
+    const list=DB.members.slice().sort((a,b)=>a.name.localeCompare(b.name));
     return `<div class="card"><h3>Sign in to your account</h3>
-      <input list="nm" id="whoBox" placeholder="Name, phone ending, or code"/>
+      <input list="nm" id="whoBox" placeholder="Type or pick a name"/>
       <datalist id="nm">${names}</datalist>
+      <div class="name-grid">${list.map(m=>`<button class="btn ghost name-pick" onclick="who='${esc(m.name).replace(/'/g,"")}';render()">${esc(m.name)}</button>`).join("")}</div>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" onclick="openMyStatus()">Open my status</button>
       </div>
