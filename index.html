@@ -265,15 +265,21 @@ function initFirebase(){
     FB.db=firebase.firestore();
     try{ FB.auth=firebase.auth(); }catch(e){ FB.auth=null; }
     if(FB.auth){
+      try{ FB.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); }catch(e){}
       FB.auth.onAuthStateChanged(u=>{
         FB.user=u||null;
+        if(u){
+          authed=true;
+          if(mode!=="treasurer") mode="treasurer";
+          saveSess();
+        }
         if(typeof render==="function") try{ render(); }catch(err){}
       });
     }
     FB.ok=true;
     listenCloud();
     if(FB.auth){
-      FB.auth.getRedirectResult().then(res=>{ if(res && res.user) afterGoogle(res.user); }).catch(function(){});
+      FB.auth.getRedirectResult().then(res=>{ if(res && res.user) afterGoogle(res.user); }).catch(handleGoogleErr);
     }
   }catch(e){ FB.err=String(e.message||e); }
 }
@@ -333,20 +339,18 @@ function googleProvider(){
 }
 function afterGoogle(user){
   FB.user=user;
+  authed=true; mode="treasurer"; tab="backup";
+  saveSess();
   pushCloud();
-  alert("Signed in as "+(user.email||"treasurer")+". This device can publish to the live book.");
+  let ping=true;
+  try{ ping=sessionStorage.getItem("must2017google")==="1"; sessionStorage.removeItem("must2017google"); }catch(e){}
+  if(ping) alert("Signed in as "+(user.email||"treasurer")+". This device can publish to the live book.");
   render();
 }
-function googleSignIn(){
-  if(!FB.auth){ alert("Refresh the page, then try again."); return; }
-  const mobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  const go=mobile ? FB.auth.signInWithRedirect(googleProvider()) : FB.auth.signInWithPopup(googleProvider());
-  Promise.resolve(go).then(res=>{
-    if(res && res.user) afterGoogle(res.user);
-  }).catch(e=>{
-    const m=String(e.code||e.message||e);
+function handleGoogleErr(e){
+    const m=String((e&&e.code)||(e&&e.message)||e||"");
     if(m.indexOf("api-key-not-valid")>=0)
-      alert("The API key in this file is wrong (it was copied from a photo). In Firebase: Project settings (gear) → Your apps → Web app → copy firebaseConfig and paste it in the box on this Backup page, then tap Link.");
+      alert("The API key in this file is wrong. Paste firebaseConfig on Backup and tap Link.");
     else if(m.indexOf("auth/operation-not-allowed")>=0)
       alert("Enable Google in Authentication → Sign-in method.");
     else if(m.indexOf("auth/unauthorized-domain")>=0)
@@ -354,7 +358,18 @@ function googleSignIn(){
     else if(m.indexOf("popup-closed")>=0 || m.indexOf("cancelled")>=0)
       return;
     else alert("Sign-in failed: "+m);
-  });
+}
+function googleSignIn(){
+  if(!FB.auth){ alert("Refresh the page, then try again."); return; }
+  try{ sessionStorage.setItem("must2017google","1"); }catch(e){}
+  const finish=res=>{ if(res && res.user) afterGoogle(res.user); };
+  FB.auth.signInWithPopup(googleProvider()).then(finish).catch(function(e){
+    const m=String((e&&e.code)||"");
+    if(m.indexOf("popup")>=0 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+      return FB.auth.signInWithRedirect(googleProvider());
+    }
+    handleGoogleErr(e);
+  }).catch(handleGoogleErr);
 }
 function googleSignOut(){
   if(FB.auth) FB.auth.signOut().then(()=>{ FB.user=null; render(); });
@@ -442,6 +457,17 @@ function tagMsg(t){
 }
 
 let mode="member", tab="home", authed=false, who="";
+const SESSKEY="must2017trust.session";
+function saveSess(){ try{ localStorage.setItem(SESSKEY, JSON.stringify({mode,tab,authed,who})); }catch(e){} }
+function loadSess(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SESSKEY)||"null");
+    if(!s) return;
+    if(s.authed){ authed=true; mode=s.mode||"treasurer"; tab=s.tab||"backup"; }
+    if(s.who) who=s.who;
+  }catch(e){}
+}
+loadSess();
 const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["flyer","Flyer"],["backup","Backup"]];
 const TABS_M=[["home","My status"],["spend","Fund money"],["profile","My details"],["note","Write to treasurer"]];
 
@@ -466,7 +492,7 @@ function togglePin(){
 }
 function tryPin(){
   const p=document.getElementById("pinBox").value;
-  if(p===DB.pin){ authed=true; mode="treasurer"; tab="home"; closeModal(); render(); }
+  if(p===DB.pin){ authed=true; mode="treasurer"; tab="home"; saveSess(); closeModal(); render(); }
   else alert("Wrong PIN");
 }
 function forgotPin(){
