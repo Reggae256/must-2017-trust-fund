@@ -663,18 +663,24 @@ function memberHome(st){
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
     const opts=DB.members.slice().sort((a,b)=>a.name.localeCompare(b.name))
-      .map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
-    return `<div class="card"><h3>Sign in to your account</h3>
-      <label>Pick your name</label>
-      <select id="whoPick" onchange="pickSignId(this.value)">
-        <option value="">Tap here to choose</option>
-        ${opts}
-      </select>
-      <label>Or type name / phone / code</label>
-      <input id="whoBox" autocomplete="off" inputmode="text" placeholder="Start typing…" oninput="filterSignNames()"/>
-      <div id="nameHints" class="name-hints"></div>
+      .map(m=>`<option value="${m.id}" ${String(window._signId)===String(m.id)?"selected":""}>${esc(m.name)}</option>`).join("");
+    const pending=DB.members.find(x=>String(x.id)===String(window._signId||""));
+    if(!pending){
+      return `<div class="card"><h3>Sign in</h3>
+        <label>Your name</label>
+        <select id="whoPick" onchange="chooseSignName(this.value)">
+          <option value="">Tap to pick your name</option>
+          ${opts}
+        </select>
+      </div>`;
+    }
+    return `<div class="card"><h3>Sign in</h3>
+      <p>Hello <b>${esc(pending.name)}</b></p>
+      <label>Enter the code the treasurer sent you</label>
+      <input id="whoCode" autocomplete="off" autocapitalize="characters" placeholder="5-character code"/>
       <div class="row" style="margin-top:10px">
-        <button class="btn gold" onclick="openMyStatus()">Open my status</button>
+        <button class="btn gold" onclick="confirmSignCode()">Open my account</button>
+        <button class="btn ghost" onclick="window._signId='';render()">Change name</button>
       </div>
     </div>
     `;
@@ -723,7 +729,7 @@ function findMembers(q){
     return false;
   });
 }
-function pickMember(id){ const m=DB.members.find(x=>x.id==id); if(!m) return; who=m.name; closeModal(); render(); }
+function pickMember(id){ chooseSignName(id); closeModal(); }
 
 function filterSignNames(){
   const box=document.getElementById("whoBox");
@@ -742,10 +748,24 @@ function filterSignNames(){
   }).slice(0,20);
   out.innerHTML=hits.map(m=>`<button type="button" class="name-hint" onclick="pickSignId(${m.id})">${esc(m.name)}</button>`).join("");
 }
-function pickSignId(id){
-  const m=DB.members.find(x=>String(x.id)===String(id));
-  if(!m) return;
+function chooseSignName(id){
+  if(!id){ window._signId=""; render(); return; }
+  window._signId=id;
+  render();
+}
+function pickSignId(id){ chooseSignName(id); }
+function confirmSignCode(){
+  const m=DB.members.find(x=>String(x.id)===String(window._signId||""));
+  if(!m){ alert("Pick your name first"); return; }
+  if(!m.code) assignCode(m,false);
+  const code=((document.getElementById("whoCode")||{}).value||"").trim().toUpperCase();
+  if(!code){ alert("Enter the code shared with you"); return; }
+  if(code!==String(m.code||"").toUpperCase()){
+    alert("That code does not match. Ask the treasurer to share your code.");
+    return;
+  }
   who=m.name;
+  window._signId="";
   saveSess();
   render();
 }
@@ -2172,6 +2192,7 @@ function bootCine(){
 
 authed=false; mode="member"; tab="home";
 try{ localStorage.removeItem(SESSKEY); }catch(e){}
+try{ (DB.members||[]).forEach(m=>{ if(!m.code) assignCode(m,false); }); }catch(e){}
 bootCine();
 render();
 </script>
