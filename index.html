@@ -144,7 +144,8 @@ html[data-theme="light"] .brand h1,.brand p{text-shadow:0 2px 10px rgba(0,0,0,.5
 html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .pay-pill{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:10px 12px;margin:6px 6px 0 0;cursor:pointer;font-weight:700;border:0}
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#666;vertical-align:middle}
-.live-dot.on{background:#3dd68c;box-shadow:0 0 8px #3dd68c}
+.live-dot.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.live-dot.off{background:#e11d48;box-shadow:0 0 8px #e11d48}
 .exp-head{background:#111;color:#f5d15a;font-weight:700;padding:8px 12px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;letter-spacing:.04em;text-transform:uppercase;font-size:.75rem}
 .exp-tick{border-radius:0 0 10px 10px;height:180px}
 .exp-row{padding:8px 12px;border-bottom:1px solid #2a2a2a;font-size:.9rem}
@@ -312,6 +313,8 @@ function initFirebase(){
     }
     FB.ok=true;
     listenCloud();
+    listenPresence();
+    beatPresence();
     if(FB.auth){
       FB.auth.getRedirectResult().then(res=>{ if(res && res.user) afterGoogle(res.user); }).catch(handleGoogleErr);
     }
@@ -557,7 +560,7 @@ function applyUi(){
   document.documentElement.setAttribute("data-theme", s.theme||"dark");
   document.documentElement.setAttribute("data-font", s.font||"md");
   const foot=document.getElementById("foot");
-  if(foot) foot.innerHTML=`<span class="live-dot ${FB.ok?"on":""}"></span>`+(FB.ok?"Live":"This phone")+" · © "+new Date().getFullYear()+" MUST Education Graduates 2017 · Figures as of "+new Date().toLocaleDateString();
+  if(foot) foot.innerHTML=`<span class="live-dot ${membersOnline()?"on":"off"}"></span>`+(membersOnline()?"Members online":"No members online")+" · © "+new Date().getFullYear()+" MUST Education Graduates 2017";
 }
 document.addEventListener("click",e=>{
   if(!e.target.closest(".gear") && !e.target.closest("#uiMenu")){
@@ -588,6 +591,7 @@ function setUi(k,v){
   DB.settings[k]=v; save(); applyUi(); toggleMenu(); toggleMenu();
 }
 function render(){
+  try{ beatPresence(); }catch(e){}
   applyUi();
   document.getElementById("modeSwitch").innerHTML =
     `<button class="${mode==='member'?'on':''}" onclick="mode='member';tab='home';render()">Member</button>
@@ -683,8 +687,8 @@ function memberHome(st){
     </div>
     ${updatesBox(false)}
     ${activitiesView(false)}
-    <div class="card"><h3>Our rules</h3>
-      <button class="btn ghost" onclick="ensureDocs();openModal('<h3>Our rules</h3><pre style=white-space:pre-wrap>'+esc((DB.settings&&DB.settings.constitution)||'Not posted')+'</pre>')">Open constitution</button>
+    <div class="card"><h3>Trust fund Association Constitution</h3>
+      <button class="btn ghost" onclick="ensureDocs();openModal('<h3>Trust fund Association Constitution</h3><pre style=white-space:pre-wrap>'+esc((DB.settings&&DB.settings.constitution)||'Not posted')+'</pre>')">Open constitution</button>
     </div>`;
 }
 function findMembers(q){
@@ -1096,11 +1100,12 @@ function membersView(){
       </div>
     </div>
     <div class="card" style="overflow:auto">
-    <table><thead><tr><th>#</th><th>Name</th><th>Code</th><th>Role</th><th>Paid</th><th>Remaining</th><th>Status</th><th></th></tr></thead>
+    <table><thead><tr><th>#</th><th>Name</th><th>Code</th><th>Share</th><th>Role</th><th>Paid</th><th>Remaining</th><th>Status</th><th></th></tr></thead>
     <tbody id="regBody">${rows.map((x,i)=>`<tr>
       <td>${i+1}</td>
       <td style="color:${x.code==='no'?'var(--red)':x.code==='wait'?'var(--amber)':x.code==='inactive'?'#777':'var(--green)'};font-weight:700">${esc(x.m.name)}</td>
       <td><b>${esc(x.m.code||assignCode(x.m,false))}</b></td>
+      <td><button class="btn wa" onclick="shareCode(${x.m.id})">Share</button></td>
       <td>${esc(x.m.role)}</td>
       <td>${ugx(x.m.paid)}</td>
       <td>${ugx(x.remaining)}</td>
@@ -1385,14 +1390,90 @@ function doPay(sign,kind){
   save(); alert(m.name+" is now at "+ugx(m.paid)); render();
 }
 
+function normRole(r){
+  r=String(r||"").toLowerCase().replace(/\./g,"").replace(/\s+/g," ").trim();
+  if(["chair","chairman","chair person","chairperson"].includes(r)) return "chairperson";
+  if(["vice","vice chair","vice chairman","vice chairperson"].includes(r)) return "vice chairperson";
+  if(["sec","secretary"].includes(r)) return "secretary";
+  if(["treasurer","tresurer","accounts"].includes(r)) return "treasurer";
+  if(["pro","p r o","public relations"].includes(r)) return "pro";
+  return r;
+}
+function execRoles(){ return ["chairperson","vice chairperson","secretary","treasurer","pro"]; }
+function isExecutive(name){
+  if(!name) return false;
+  const m=DB.members.find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase());
+  if(!m) return false;
+  return execRoles().includes(normRole(m.role));
+}
+function treasurerMember(){
+  return (DB.members||[]).find(m=>normRole(m.role)==="treasurer")
+    || (DB.members||[]).find(m=>/atuha\s*reggae/i.test(m.name||""))
+    || null;
+}
+function treasurerDisplayName(){
+  const m=treasurerMember();
+  if(m){
+    DB.settings=DB.settings||defaultSettings();
+    DB.settings.treasurer=DB.settings.treasurer||{};
+    DB.settings.treasurer.name=m.name;
+    return m.name;
+  }
+  return (DB.settings.treasurer && DB.settings.treasurer.name) || "Atuha Reggae";
+}
+function membersOnline(){
+  const now=Date.now();
+  const list=(window._presence||[]).filter(p=>now-Number(p.at||0)<120000 && p.kind==="member" && p.name);
+  if(list.length) return true;
+  return mode==="member" && !!who && !isTreasurerName(who);
+}
+function isTreasurerName(name){
+  const t=treasurerDisplayName().toLowerCase();
+  return String(name||"").toLowerCase()===t;
+}
+function presenceId(){
+  let id=localStorage.getItem("must2017trust.sid");
+  if(!id){ id="s"+Math.random().toString(36).slice(2,10)+Date.now().toString(36); localStorage.setItem("must2017trust.sid",id); }
+  return id;
+}
+function beatPresence(){
+  const kind=(mode==="treasurer" || isTreasurerName(who))?"treasurer":(who?"member":"visitor");
+  const rec={id:presenceId(), name: mode==="treasurer"?treasurerDisplayName():(who||""), kind, at:Date.now()};
+  window._presence=window._presence||[];
+  const i=window._presence.findIndex(p=>p.id===rec.id);
+  if(i>=0) window._presence[i]=rec; else window._presence.push(rec);
+  if(FB.db){
+    try{
+      FB.db.collection("presence").doc(rec.id).set(rec).catch(()=>{});
+    }catch(e){}
+  }
+}
+function listenPresence(){
+  if(!FB.db || window._presUnsub) return;
+  try{
+    window._presUnsub=FB.db.collection("presence").onSnapshot(snap=>{
+      window._presence=snap.docs.map(d=>d.data());
+      const foot=document.getElementById("foot");
+      if(foot){
+        const on=membersOnline();
+        foot.innerHTML=`<span class="live-dot ${on?"on":"off"}"></span>`+(on?"Members online":"No members online")+" · © "+new Date().getFullYear()+" MUST Education Graduates 2017";
+      }
+    }, ()=>{});
+  }catch(e){}
+}
 function visibleChat(isTreas){
   return DB.chat.filter(c=>{
     if(isTreas) return true;
     const to=(c.to||"Everyone");
-    if(to==="Everyone" && !c.confidential && !c.private) return true;
     const me=(who||"").toLowerCase();
-    if(!me) return to==="Everyone" && !c.private;
-    return (c.from||"").toLowerCase()===me || (to||"").toLowerCase()===me;
+    const from=(c.from||"").toLowerCase();
+    if(to==="Everyone" && !c.confidential) return true;
+    if(to==="Executives") return isExecutive(who);
+    if(!me) return false;
+    if(from===me) return true;
+    if(to.toLowerCase()===me) return true;
+    if(to==="Treasurer" && isExecutive(who) && String((DB.members.find(x=>(x.name||"").toLowerCase()===me)||{}).role||"").toLowerCase()==="treasurer") return true;
+    return false;
   });
 }
 function chatView(isTreas){
@@ -1401,11 +1482,15 @@ function chatView(isTreas){
     </div>`:""}
   <div class="card">
     <h3>Association room</h3>
-    ${who?`<p>Sending as <b>${esc(who)}</b></p><input type="hidden" id="chatFrom" value="${esc(who)}"/>`:`<p>Open <b>My account</b> first so your name is locked to your record.</p><input type="hidden" id="chatFrom" value=""/>`}
+    ${isTreas
+      ? `<p>Sending as <b>${esc(treasurerDisplayName())}</b></p><input type="hidden" id="chatFrom" value="${esc(treasurerDisplayName())}"/>`
+      : (who?`<p>Sending as <b>${esc(who)}</b></p><input type="hidden" id="chatFrom" value="${esc(who)}"/>`:`<p>Open <b>My account</b> first so your name is locked to your record.</p><input type="hidden" id="chatFrom" value=""/>`)}
     <label>Send to</label>
-    <select id="chatTo"><option value="Everyone">Group — everyone</option>
+    <select id="chatTo">
+      <option value="Everyone">Everyone</option>
+      ${(isTreas||isExecutive(who))?`<option value="Executives">Executives only</option>`:""}
       ${DB.members.filter(m=>m.active).map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("")}
-      <option value="Treasurer">Treasurer only</option>
+      ${isTreas?"":`<option value="Treasurer">Treasurer only</option>`}
     </select>
     <label>Message</label><textarea id="chatText" rows="3" placeholder="Group notice, or a private line to one member."></textarea>
     <div class="row" style="margin-top:10px">
@@ -1435,7 +1520,8 @@ function postChat(){
   if(!from||!text){ alert("Name and message required"); return; }
   const kind=tagMsg(text);
   const priv=to!=="Everyone" || kind==="benefit";
-  DB.chat.push({from,to,text,at:new Date().toISOString(),role:mode==="treasurer"?"official":"member",private:priv,confidential:kind==="benefit"||to==="Treasurer"});
+  const fromName=mode==="treasurer"?treasurerDisplayName():from;
+  DB.chat.push({from:fromName,to,text,at:new Date().toISOString(),role:mode==="treasurer"||to==="Executives"?"official":"member",private:priv,confidential:kind==="benefit"||to==="Treasurer"||to==="Executives"});
   save(); render();
 }
 function downloadChatSummary(){
@@ -1775,7 +1861,7 @@ function howPayView(isTreas){
 }
 function constitutionView(isTreas){
   ensureDocs();
-  return `<div class="card"><h3>Our rules</h3>
+  return `<div class="card"><h3>Trust fund Association Constitution</h3>
     <pre style="white-space:pre-wrap">${esc(DB.settings.constitution||"Not posted")}</pre></div>`+
     (isTreas?`<div class="card"><textarea id="conEdit" rows="8">${esc(DB.settings.constitution||"")}</textarea>
       <button class="btn gold" onclick="saveConstitution()">Save</button>
@@ -1810,8 +1896,8 @@ function docsView(isTreas){
   const memberBlocks=`
     <div class="card"><h3>Pay in</h3>
       <p>Stanbic ${BANK}. Tap a company.</p>${payBox}</div>
-    <div class="card"><h3>Our rules</h3>
-      <button class="btn ghost" onclick="openModal('<h3>Our rules</h3><pre style=white-space:pre-wrap>'+esc(DB.settings.constitution||'Not posted')+'</pre>')">Open summary</button>
+    <div class="card"><h3>Trust fund Association Constitution</h3>
+      <button class="btn ghost" onclick="openModal('<h3>Trust fund Association Constitution</h3><pre style=white-space:pre-wrap>'+esc(DB.settings.constitution||'Not posted')+'</pre>')">Open summary</button>
     </div>
     <div class="card"><h3>Annual association activities</h3>
       <pre style="white-space:pre-wrap">${esc(DB.settings.activities||"No activities posted yet.")}</pre>
