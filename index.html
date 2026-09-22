@@ -772,7 +772,7 @@ function updatesBox(isExec){
     <label>Who should see it</label>
     <select id="ntAud"><option value="all">All members</option><option value="exec">Executives only</option></select>
     <button class="btn gold" style="margin-top:8px" onclick="postNotice()">Publish update</button>`;
-  return `<div class="card"><h3>Notices</h3>
+  return `<div class="card"><h3>Updates</h3>
     ${list.length?list.map(n=>`<p><small>${esc(n.at).slice(0,10)} · ${esc(n.from)}</small><br>${esc(n.text)}</p>`).join(""):"<p>No updates yet.</p>"}
     ${extra}</div>`;
 }
@@ -1783,7 +1783,7 @@ function constitutionView(isTreas){
 }
 function activitiesView(isTreas){
   ensureDocs();
-  return `<div class="card"><h3>What is on</h3>
+  return `<div class="card"><h3>Annual association activities</h3>
     <pre style="white-space:pre-wrap">${esc(DB.settings.activities||"No activities posted yet.")}</pre></div>`+
     (isTreas?`<div class="card"><textarea id="actEdit" rows="8">${esc(DB.settings.activities||"")}</textarea>
       <button class="btn gold" onclick="saveActivities()">Save</button>
@@ -1813,7 +1813,7 @@ function docsView(isTreas){
     <div class="card"><h3>Our rules</h3>
       <button class="btn ghost" onclick="openModal('<h3>Our rules</h3><pre style=white-space:pre-wrap>'+esc(DB.settings.constitution||'Not posted')+'</pre>')">Open summary</button>
     </div>
-    <div class="card"><h3>What is on</h3>
+    <div class="card"><h3>Annual association activities</h3>
       <pre style="white-space:pre-wrap">${esc(DB.settings.activities||"No activities posted yet.")}</pre>
     </div>
     <div class="card"><h3>Bank papers</h3>
