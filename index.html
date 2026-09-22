@@ -17,8 +17,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#070707; --panel:#161616; --card:#202020; --line:#444;
-  --gold:#e4c04a; --gold2:#ffe9a8; --ink:#fff8e8; --muted:#cbbf9f;
+  --bg:#070707; --panel:#14110c; --card:#1c1810; --line:#8a7330;
+  --gold:#f5d15a; --gold2:#fff1b0; --ink:#fffaf0; --muted:#f0e2b8;
   --green:#4ae39a; --green-dim:#163526; --red:#ff7a6b; --red-dim:#3a1612;
   --amber:#ffd36a; --amber-dim:#3a2e12; --teal:#25d366;
 }
@@ -39,9 +39,9 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .cine video,.cine img{position:absolute;left:0;right:0;top:-18%;width:100%;height:140%;object-fit:cover;object-position:center 62%;filter:saturate(1.12) contrast(1.12) brightness(.72);pointer-events:none}
 .cine img.cine-still{opacity:.55;animation:cineKen 22s ease-in-out infinite alternate}
 .cine video{opacity:0;transition:opacity .7s ease;pointer-events:none}
-.cine video.is-on{opacity:.7}
+.cine video.is-on{opacity:.55}
 .cine img.cine-still.is-dim{opacity:.12}
-.cine::after{content:"";position:absolute;inset:0;pointer-events:auto;background:linear-gradient(90deg,rgba(7,7,7,.72) 0%,rgba(7,7,7,.28) 38%,rgba(7,7,7,.28) 62%,rgba(7,7,7,.78) 100%)}
+.cine::after{content:"";position:absolute;inset:0;pointer-events:auto;background:linear-gradient(90deg,rgba(7,7,7,.88) 0%,rgba(7,7,7,.55) 34%,rgba(7,7,7,.22) 58%,rgba(7,7,7,.82) 100%)}
 @keyframes cineKen{0%{transform:scale(1.02)}100%{transform:scale(1.1)}}
 .top>.row,.top .brand,.top .crest,.top .mode,.top .gear{position:relative;z-index:2}
 .brand h1,.brand p{text-shadow:0 2px 14px #000,0 0 4px #000}
@@ -73,8 +73,8 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .mode button.on{background:var(--gold);color:#111;font-weight:700}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
-.stat b{display:block;font-size:1.25rem;color:var(--gold2)}
-.stat span{color:var(--muted);font-size:.75rem}
+.stat b{display:block;font-size:1.35rem;color:var(--gold2);text-shadow:0 1px 0 #000}
+.stat span{color:#fff3c8;font-size:.8rem;font-weight:600}
 .nav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
 .nav button,.btn{border:1px solid #3a3322;background:#1c1c1c;color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer}
 .nav button.on,.btn.gold{background:var(--gold);color:#111;border-color:var(--gold);font-weight:700}
@@ -119,6 +119,7 @@ th{color:var(--gold);font-weight:600;font-size:.75rem;letter-spacing:.04em;text-
 .money-slide .stat.on{display:block}
 #heroPie svg path{opacity:.28;transition:opacity .4s}
 #heroPie svg path.hot{opacity:1}
+.asof{text-align:center;color:#efe0b0;font-size:.8rem;margin:4px 0 8px}
 .credits{height:220px;overflow:hidden;position:relative;border:1px solid var(--line);border-radius:10px}
 .credits-inner{animation:roll 18s linear infinite}
 .credits table{margin:0}
@@ -334,7 +335,6 @@ function googleProvider(){
 }
 function afterGoogle(user){
   FB.user=user;
-  authed=true; mode="treasurer"; tab="backup";
   saveSess();
   pushCloud();
   let ping=true;
@@ -453,7 +453,7 @@ function tagMsg(t){
 
 let mode="member", tab="home", authed=false, who="";
 const SESSKEY="must2017trust.session";
-function saveSess(){ try{ sessionStorage.setItem(SESSKEY, JSON.stringify({mode,tab,authed,who})); }catch(e){} }
+function saveSess(){ try{ sessionStorage.setItem(SESSKEY, JSON.stringify({who})); }catch(e){} }
 function loadSess(){
   try{
     const s=JSON.parse(sessionStorage.getItem(SESSKEY)||"null");
@@ -463,7 +463,7 @@ function loadSess(){
 }
 loadSess();
 const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["flyer","Flyer"],["backup","Backup"]];
-const TABS_M=[["home","My status"],["spend","Fund money"],["profile","My details"],["note","Write to treasurer"]];
+const TABS_M=[["home","My status"],["spend","Fund money"],["chat","Chat"],["profile","My details"],["note","Write to treasurer"]];
 
 function needPin(){
   if(authed) return true;
@@ -519,7 +519,7 @@ function applyUi(){
   document.documentElement.setAttribute("data-theme", s.theme||"dark");
   document.documentElement.setAttribute("data-font", s.font||"md");
   const foot=document.getElementById("foot");
-  if(foot) foot.textContent="© "+new Date().getFullYear()+" MUST Education Graduates 2017";
+  if(foot) foot.innerHTML="© "+new Date().getFullYear()+" MUST Education Graduates 2017 · Figures as of "+new Date().toLocaleDateString()+" · "+(FB.ok?"Live book":"This phone")+(FB.user?" · published by "+esc(FB.user.email):"");
 }
 document.addEventListener("click",e=>{
   if(!e.target.closest(".gear") && !e.target.closest("#uiMenu")){
@@ -570,10 +570,10 @@ function render(){
   const spent=DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
   const bal=collected-spent;
   document.getElementById("stats").innerHTML = `
-    <div class="stat on" data-slice="0"><b>${ugx(collected)}</b><span>Money in (fees + contributions + first deposit)</span></div>
-    <div class="stat" data-slice="1"><b>${ugx(due)}</b><span>Still to collect</span></div>
-    <div class="stat" data-slice="2"><b>${ugx(spent)}</b><span>Money spent</span></div>
-    <div class="stat" data-slice="3"><b>${ugx(bal)}</b><span>Account balance</span></div>`;
+    <div class="stat on" data-slice="0"><b>${ugx(collected)}</b><span>Collected</span></div>
+    <div class="stat" data-slice="1"><b>${ugx(spent)}</b><span>Spent</span></div>
+    <div class="stat" data-slice="2"><b>${ugx(bal)}</b><span>In the books</span></div>
+    <div class="stat" data-slice="3"><b>${ugx(due)}</b><span>Still due</span></div>`;
   const pie=document.getElementById("heroPie");
   if(pie) pie.innerHTML = miniPie(collected,due,spent,bal);
   startMoneySlide();
@@ -607,8 +607,8 @@ function memberHome(st){
   if(!found){
     return `<div class="card"><h3>Open your record</h3>
       <p style="font-size:.9rem;color:var(--muted)">${cloudLabel()}</p>
-      <p>Type your name exactly as on the register. You will only see your own balance.</p>
-      <input list="nm" id="whoBox" placeholder="Your full name"/>
+      <p>Search your name, or the last 4 digits of your phone. You will only see your own balance.</p>
+      <input list="nm" id="whoBox" placeholder="Name or phone ending"/>
       <datalist id="nm">${names}</datalist>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" onclick="openMyStatus()">Open my status</button>
@@ -645,10 +645,29 @@ function memberHome(st){
     <div class="card"><h3>For you</h3>${notices.map(n=>`<p>${esc(n)}</p>`).join("")}</div>
     ${fundView(booksIn(), DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0), DB.members.filter(m=>m.active).reduce((s,m)=>s+classify(m,new Date()).remaining,0))}`;
 }
+function findMembers(q){
+  q=(q||"").trim().toLowerCase();
+  const digits=q.replace(/\D/g,"");
+  return DB.members.filter(m=>{
+    const n=(m.name||"").toLowerCase();
+    if(!q) return false;
+    if(n===q || n.indexOf(q)>=0) return true;
+    const ph=String(m.phone||"").replace(/\D/g,"");
+    if(digits.length>=4 && ph.endsWith(digits)) return true;
+    return false;
+  });
+}
+function pickMember(id){ const m=DB.members.find(x=>x.id==id); if(!m) return; who=m.name; closeModal(); render(); }
 function openMyStatus(){
   const name=(document.getElementById("whoBox").value||"").trim();
-  if(!name){ alert("Type your name"); return; }
-  const found=DB.members.find(m=>m.name.toLowerCase()===name.toLowerCase());
+  if(!name){ alert("Type your name or phone ending"); return; }
+  const hits=findMembers(name);
+  if(hits.length===1){ who=hits[0].name; render(); return; }
+  if(hits.length>1){
+    openModal(`<h3>Which member?</h3>`+hits.slice(0,8).map(m=>`<button class="btn ghost" style="display:block;width:100%;margin:6px 0;text-align:left" onclick="pickMember(${m.id})">${esc(m.name)}${m.phone?" · "+esc(m.phone):""}</button>`).join(""));
+    return;
+  }
+  const found=null;
   if(!found){
     openModal(`<h3>Name not on the register</h3>
       <p>Contact the treasurer or an administrator to register you. Thank you.</p>
@@ -788,9 +807,8 @@ function fundView(collected,spent,due){
   return `<div class="card"><h3>Association money</h3>
     <p>Collected <b>${ugx(collected)}</b> · still to collect <b>${ugx(due)}</b> · spent <b>${ugx(spent)}</b> · account balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,due)}</div>
-    <div class="card"><h3>Expenditure ${year}</h3>
-    <table><thead><tr><th>Date</th><th>Item</th><th>Amount</th><th>C/O</th></tr></thead>
-    <tbody>${(DB.expenses.filter(e=>e.seen!==false)).map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}</td><td>${ugx(e.amount)}</td><td>${esc(e.by||"—")}</td></tr>`).join("")||"<tr><td colspan=4>None published by the treasurer yet</td></tr>"}</tbody></table></div>`;
+    <div class="card"><h3>Expenditure</h3>
+    ${expRoll(DB.expenses.filter(e=>e.seen!==false))}</div>`;
 }
 function personFields(id,label,obj){
   obj=obj||{};
@@ -1153,22 +1171,26 @@ function htmlToOpen(html, filename){
   fail();
 }
 function statementHtml(id){
-  const m=DB.members.find(x=>x.id===id); if(!m) return "";
+  const m=DB.members.find(x=>x.id==id); if(!m) return "";
   const cl=classify(m,new Date());
-  const now=new Date();
   const lines=memberLines(m);
-  const rows=lines.map(t=>`<tr><td>${esc(String(t.at).slice(0,16))}</td><td>${esc(t.type)}</td><td style="text-align:right">${ugx(t.amount)}</td></tr>`).join("");
-  return `<div style="font-family:Arial,sans-serif;color:#111;background:#fff;padding:18px;width:720px">
+  const rows=lines.map(t=>`<tr>
+      <td>${esc(t.type)}</td>
+      <td style="text-align:right">${t.due!=null?ugx(t.due):"—"}</td>
+      <td style="text-align:right">${ugx(t.amount)}</td>
+      <td>${t.ok?"Cleared":"Due"}</td>
+    </tr>`).join("");
+  return `<div style="font-family:Arial,sans-serif;color:#111;background:#fff;padding:18px;max-width:720px">
     <h2 style="margin:0 0 6px;color:#5c4300">MUST GRADUATES 2017 TRUST FUND</h2>
     <h3 style="margin:0 0 10px">Statement · ${esc(m.name)}</h3>
-    <p style="margin:0 0 8px">Role: ${esc(m.role||"—")} · Phone: ${esc(m.phone||"—")}<br>
-    Paid: <b>${ugx(m.paid)}</b> · Remaining to ${now.toLocaleString("en-UG",{month:"long",year:"numeric"})}: <b>${ugx(cl.remaining)}</b><br>
-    Months behind: ${cl.monthsBehind||0} · Expected to date: ${ugx(cl.expectedNow)}</p>
-    <table style="width:100%;border-collapse:collapse" border="1" cellspacing="0" cellpadding="6">
-      <thead><tr style="background:#111;color:#fff"><th align="left">When</th><th align="left">Note</th><th align="right">Amount</th></tr></thead>
+    <p style="margin:0 0 8px">Role: ${esc(m.role||"—")} · Phone: ${esc(m.phone||"—")}</p>
+    <p>Paid ${ugx(m.paid||0)} · Remaining to this month ${ugx(cl.remaining)} · Status ${esc(cl.label)}</p>
+    <p>Each month from January 2025 is billed 10,000. Payments fill months in that order.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead><tr><th align="left">Month</th><th align="right">Expected</th><th align="right">Applied</th><th>Status</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="margin-top:14px;font-size:12px">Pay to Stanbic ${BANK} · ${EMAIL}</p>
+    <p style="margin-top:14px;font-size:12px">Pay to Stanbic ${BANK} · ${EMAIL}<br>Printed ${new Date().toLocaleString()}</p>
   </div>`;
 }
 function printStmt(id){
@@ -1180,22 +1202,42 @@ function printStmt(id){
   w.document.close();
 }
 function downloadStmt(id){
-  const m=DB.members.find(x=>x.id==id); if(!m){ alert("Open a statement first"); return; }
-  const html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+esc(m.name)+" statement</title></head><body style='margin:0;background:#fff'>"+statementHtml(id)+"</body></html>";
-  const file=(m.name||"member").replace(/[^\w\- ]+/g,"_").replace(/\s+/g,"-")+"-statement.html";
-  openFile(new Blob([html],{type:"text/html;charset=utf-8"}), file);
-  const w=window.open("","stmtfile","width=820,height=920");
-  if(w){ w.document.write(html); w.document.close(); }
+  const html=statementHtml(id);
+  if(!html){ alert("Open a statement first"); return; }
+  const w=window.open("","stmt","width=800,height=900");
+  if(!w){
+    const blob=new Blob([html],{type:"text/html"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="MUST-2017-statement.html";
+    a.click();
+    return;
+  }
+  w.document.write("<!DOCTYPE html><html><head><title>Statement</title></head><body>"+html+"<p class=\"noprint\"><button onclick=\"window.print()\">Print / Save PDF</button></p></body></html>");
+  w.document.close();
 }
 
+function monthKeys(now){
+  now=now||new Date();
+  const out=[];
+  let y=START.getFullYear(), m=START.getMonth();
+  while(y<now.getFullYear() || (y===now.getFullYear() && m<=now.getMonth())){
+    const d=new Date(y,m,1);
+    out.push({key:d.getFullYear()+"-"+String(m+1).padStart(2,"0"), label:d.toLocaleString("en",{month:"long",year:"numeric"})});
+    m++; if(m===12){ m=0; y++; }
+  }
+  return out;
+}
 function memberLines(m){
   const lines=[];
-  if(m.fee) lines.push({at:"2025-01",type:"Membership fee",amount:m.fee});
-  const mo=m.months||{};
-  Object.keys(mo).forEach(k=>{ if(mo[k]) lines.push({at:"2025-"+k,type:"Contribution "+k,amount:mo[k]}); });
-  (m.tx||[]).forEach(t=>lines.push({at:t.at,type:t.type,amount:t.amount}));
-  if(!lines.length && (m.paid||0)>0) lines.push({at:"Excel",type:"Total contributed on register",amount:m.paid});
-  if(!lines.length) lines.push({at:"—",type:"No payment recorded yet. Expected to this month "+ugx(classify(m,new Date()).expectedNow),amount:0});
+  if(m.fee) lines.push({at:"2025-01",type:"Membership fee",amount:m.fee,due:m.fee,ok:true});
+  let pool=Number(m.paid||0);
+  monthKeys().forEach(k=>{
+    const take=Math.min(MONTHLY, Math.max(0,pool));
+    pool-=take;
+    lines.push({at:k.key,type:k.label,amount:take,due:MONTHLY,ok:take>=MONTHLY});
+  });
+  if(pool>0) lines.push({at:"prepaid",type:"Prepaid beyond this month",amount:pool,due:0,ok:true});
   return lines;
 }
 function downloadMemberStmt(id){ downloadStmt(id); }
@@ -1265,10 +1307,12 @@ function doPay(sign,kind){
 
 function visibleChat(isTreas){
   return DB.chat.filter(c=>{
-    const kind=tagMsg(c.text);
-    const secret=c.confidential || c.private || kind==="benefit" || c.to==="Treasurer";
-    if(secret) return isTreas;
-    return true;
+    if(isTreas) return true;
+    const to=(c.to||"Everyone");
+    if(to==="Everyone" && !c.confidential && !c.private) return true;
+    const me=(who||"").toLowerCase();
+    if(!me) return to==="Everyone" && !c.private;
+    return (c.from||"").toLowerCase()===me || (to||"").toLowerCase()===me;
   });
 }
 function chatView(isTreas){
@@ -1278,9 +1322,15 @@ function chatView(isTreas){
   <div class="card">
     <h3>Association room</h3>
     <label>Your name</label><input id="chatFrom" value="${esc(who)}" placeholder="Full name as on the register"/>
-    <label>Message (public)</label><textarea id="chatText" rows="3" placeholder="Meetings and general notices only. Benefit requests go to Message treasurer."></textarea>
+    <label>Send to</label>
+    <select id="chatTo"><option value="Everyone">Group — everyone</option>
+      ${DB.members.filter(m=>m.active).map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("")}
+      <option value="Treasurer">Treasurer only</option>
+    </select>
+    <label>Message</label><textarea id="chatText" rows="3" placeholder="Group notice, or a private line to one member."></textarea>
     <div class="row" style="margin-top:10px">
-      <button class="btn gold" onclick="postChat()">Post publicly</button>
+      <button class="btn gold" onclick="postChat()">Send</button>
+      ${isTreas?`<button class="btn ghost" onclick="downloadChatSummary()">Download chat summary</button>`:""}
     </div>
   </div>
   <div class="card chatlog">${visibleChat(isTreas).slice().reverse().map(c=>`
@@ -1299,17 +1349,24 @@ function summarizeChat(){
     ${flagged.map(c=>`<div>• <b>${esc(c.from)}</b> → ${esc(c.to)} <span class="pill wait">${tagMsg(c.text)}</span> ${esc(c.text)}</div>`).join("")||"<p>No flagged messages yet.</p>"}`;
 }
 function postChat(){
-  const from=(document.getElementById("chatFrom").value||"").trim();
+  const from=(document.getElementById("chatFrom").value||who||"").trim();
   const text=(document.getElementById("chatText").value||"").trim();
+  const to=(document.getElementById("chatTo")||{}).value||"Everyone";
   if(!from||!text){ alert("Name and message required"); return; }
   const kind=tagMsg(text);
-  if(kind==="benefit"){
-    DB.chat.push({from,to:"Treasurer",text,at:new Date().toISOString(),role:"member",private:true,confidential:true});
-    alert("Sent");
-  } else {
-    DB.chat.push({from,to:"Everyone",text,at:new Date().toISOString(),role:"member",private:false,confidential:false});
-  }
+  const priv=to!=="Everyone" || kind==="benefit";
+  DB.chat.push({from,to,text,at:new Date().toISOString(),role:mode==="treasurer"?"official":"member",private:priv,confidential:kind==="benefit"||to==="Treasurer"});
   save(); render();
+}
+function downloadChatSummary(){
+  const rows=[["When","From","To","Tag","Text"]];
+  (DB.chat||[]).forEach(c=>rows.push([c.at||"",c.from||"",c.to||"",tagMsg(c.text||""),(c.text||"").replace(/\n/g," ")]));
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="MUST-2017-chat-summary.csv";
+  a.click();
 }
 
 function expView(collected,spent){
@@ -1321,11 +1378,10 @@ function expView(collected,spent){
     <label>C/O</label><input id="exBy"/>
     <button class="btn gold" style="margin-top:8px" onclick="addExp()">Add expense</button>
   </div>
-  <div class="card" style="overflow:auto"><table><thead><tr><th>Date</th><th>Item</th><th>Amount</th><th>C/O</th><th>Members see</th></tr></thead>
-  <tbody>${DB.expenses.map((e,i)=>`<tr>
-    <td>${esc(e.date)}</td><td>${esc(e.item)}</td><td>${ugx(e.amount)}</td><td>${esc(e.by)}</td>
-    <td><button class="eye" onclick="toggleSeen(${i})">${e.seen===false?"🙈 Hidden from members":"👁 Visible to members"}</button></td>
-  </tr>`).join("")}</tbody></table></div>`;
+  <div class="card">
+    ${expRoll(DB.expenses)}
+    <div style="margin-top:10px">${DB.expenses.map((e,i)=>`<button class="btn ghost" style="margin:4px 4px 0 0" onclick="toggleSeen(${i})">${e.seen===false?"Show: "+esc(e.item):"Hide: "+esc(e.item)}</button>`).join("")}</div>
+  </div>`;
 }
 function toggleSeen(i){
   if(!needPin()) return;
@@ -1627,6 +1683,8 @@ function bootCine(){
   document.addEventListener("touchstart", tryPlay, {passive:true});
 }
 
+authed=false; mode="member"; tab="home";
+try{ localStorage.removeItem(SESSKEY); }catch(e){}
 bootCine();
 render();
 </script>
