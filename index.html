@@ -155,8 +155,14 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .new-red{color:#ff4d3a;font-weight:700}
 
 @media(max-width:800px){
-  .stats{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
   .flyer-grid{grid-template-columns:1fr 1fr}
+  .exp-grid{grid-template-columns:22% 32% 22% 24%;gap:4px;padding:6px 4px;font-size:.72rem}
+  .exp-head{font-size:.65rem;padding:8px 4px}
+  .sticky-exp{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .sticky-exp table{min-width:560px;font-size:.78rem}
+  .sticky-exp th,.sticky-exp td{padding:6px 4px;white-space:nowrap}
+  .nav button,.btn{padding:7px 10px;font-size:.82rem}
 }
 @media print{
   .noprint,.top .mode,.nav,footer,.stats{display:none!important}
@@ -489,8 +495,8 @@ function loadSess(){
   }catch(e){}
 }
 loadSess();
-const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["howpay","How to pay"],["constitution","Constitution"],["activities","Activities"],["bank","Bank files"],["flyer","Flyer"],["backup","Backup"]];
-const TABS_M=[["home","My status"],["spend","Fund money"],["howpay","How to pay"],["constitution","Constitution"],["activities","Activities"],["bank","Bank files"],["chat","Chat"],["profile","My details"],["note","Write to treasurer"]];
+const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["updates","Updates"],["flyer","Flyer"],["backup","Backup"]];
+const TABS_M=[["home","My status"],["spend","Fund money"],["chat","Chat"],["profile","My details"],["note","Write to treasurer"]];
 
 function needPin(){
   if(authed) return true;
@@ -617,10 +623,6 @@ function render(){
     if(tab==="profile") v.innerHTML=profileView();
     if(tab==="note") v.innerHTML=memberNoteView();
     if(tab==="chat") v.innerHTML=chatView(false);
-    if(tab==="howpay") v.innerHTML=howPayView(false);
-    if(tab==="constitution") v.innerHTML=constitutionView(false);
-    if(tab==="activities") v.innerHTML=activitiesView(false);
-    if(tab==="bank") v.innerHTML=bankView(false);
   } else {
     if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
     if(tab==="members") v.innerHTML=membersView();
@@ -628,10 +630,7 @@ function render(){
     if(tab==="pay") v.innerHTML=payView();
     if(tab==="chat") v.innerHTML=chatView(true);
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
-    if(tab==="howpay") v.innerHTML=howPayView(true);
-    if(tab==="constitution") v.innerHTML=constitutionView(true);
-    if(tab==="activities") v.innerHTML=activitiesView(true);
-    if(tab==="bank") v.innerHTML=bankView(true);
+    if(tab==="updates") v.innerHTML=treasUpdatesView();
     if(tab==="flyer") v.innerHTML=flyerView(st);
     if(tab==="backup") v.innerHTML=backupView();
   }
@@ -677,9 +676,9 @@ function memberHome(st){
         <button class="btn ghost" onclick="downloadMemberStmt(${found.m.id})">Download statement</button>
       </div>
     </div>
-    ${updatesBox(false)}
     <div class="card"><h3>For you</h3>${notices.map(n=>`<p>${esc(n)}</p>`).join("")}</div>
-    ${fundView(booksIn(), DB.expenses.reduce((s,e)=>s+Number(e.amount||0),0), DB.members.filter(m=>m.active).reduce((s,m)=>s+classify(m,new Date()).remaining,0))}`;
+    ${updatesBox(false)}
+    ${activitiesView(false)}`;
 }
 function findMembers(q){
   q=(q||"").trim().toLowerCase();
@@ -850,14 +849,14 @@ function expRoll(list,canEdit){
     <tbody>${body}</tbody></table></div>`;
 }
 function fundView(collected,spent,due){
-  const year=new Date().getFullYear();
-  const yearExp=DB.expenses.filter(e=>String(e.date||"").startsWith(String(year)));
-  const all=yearExp.length?yearExp:DB.expenses;
+  ensureDocs();
   return `<div class="card"><h3>Association money</h3>
     <p>Collected <b>${ugx(collected)}</b> · still to collect <b>${ugx(due)}</b> · spent <b>${ugx(spent)}</b> · account balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,due)}</div>
+    ${howPayView(false)}
     <div class="card"><h3>Expenditure</h3>
-    ${expTick(DB.expenses.filter(e=>e.seen!==false))}</div>`;
+    ${expTick(DB.expenses.filter(e=>e.seen!==false))}</div>
+    ${bankView(false)}`;
 }
 function personFields(id,label,obj){
   obj=obj||{};
@@ -1742,6 +1741,9 @@ function ensureDocs(){
   if(!DB.settings.bankFiles) DB.settings.bankFiles=[];
 }
 
+function treasUpdatesView(){
+  return updatesBox(true)+activitiesView(true)+constitutionView(true)+howPayView(true)+bankView(true);
+}
 function howPayView(isTreas){
   ensureDocs();
   const pays=DB.settings.payMethods||[];
