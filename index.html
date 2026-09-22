@@ -1447,13 +1447,15 @@ function membersOnline(){
   return liveSessions().length>0;
 }
 function footerLiveHtml(){
+  const year=new Date().getFullYear();
+  const copy=` © ${year} MUST Education Graduates 2017`;
   if(mode==="treasurer"){
     const n=memberSessions().length;
-    const d=liveSessions().length;
-    return `<span class="live-dot ${n?"on":"off"}"></span>`+(n?`<span class="live-n">${n} member${n>1?"s":""} · ${d} device${d!==1?"s":""}</span>`:`<span class="live-n">0</span>`);
+    const d=Math.max(liveSessions().length, n);
+    return `<span class="live-dot ${n?"on":"off"}"></span><span class="live-n">${n}</span>`+copy;
   }
   const d=liveSessions().length;
-  return `<span class="live-dot ${d?"on":"off"}"></span>`+(d?`<span class="live-n">${d} online</span>`:`<span class="live-n">0</span>`);
+  return `<span class="live-dot ${d?"on":"off"}"></span><span class="live-n">${d}</span>`+copy;
 }
 function isTreasurerName(name){
   const t=treasurerDisplayName().toLowerCase();
