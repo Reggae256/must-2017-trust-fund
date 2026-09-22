@@ -495,8 +495,8 @@ function loadSess(){
   }catch(e){}
 }
 loadSess();
-const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["updates","Updates"],["flyer","Flyer"],["backup","Backup"]];
-const TABS_M=[["home","My status"],["spend","Fund money"],["chat","Chat"],["profile","My details"],["note","Write to treasurer"]];
+const TABS_T=[["home","Home"],["members","Members"],["pay","Payments"],["families","Family files"],["chat","Chat"],["expenses","Money out"],["updates","Board"],["flyer","Flyer"],["backup","Backup"]];
+const TABS_M=[["home","My account"],["spend","The fund"],["chat","Chat"],["profile","Family file"],["note","Message treasurer"]];
 
 function needPin(){
   if(authed) return true;
@@ -640,7 +640,7 @@ function memberHome(st){
   const found = who ? DB.members.map(m=>({m,...classify(m,new Date())})).find(x=>x.m.name.toLowerCase()===who.toLowerCase()) : null;
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
-    return `<div class="card"><h3>Open your record</h3>
+    return `<div class="card"><h3>Sign in to your account</h3>
       <p style="font-size:.9rem;color:var(--muted)">${cloudLabel()}</p>
       <p>You will only see your own balance. Sign in with your name, phone ending, or the code from the treasurer.</p>
       <input list="nm" id="whoBox" placeholder="Name or phone ending"/>
@@ -765,7 +765,7 @@ function updatesBox(isExec){
     <label>Who should see it</label>
     <select id="ntAud"><option value="all">All members</option><option value="exec">Executives only</option></select>
     <button class="btn gold" style="margin-top:8px" onclick="postNotice()">Publish update</button>`;
-  return `<div class="card"><h3>Latest updates</h3>
+  return `<div class="card"><h3>Notices</h3>
     ${list.length?list.map(n=>`<p><small>${esc(n.at).slice(0,10)} · ${esc(n.from)}</small><br>${esc(n.text)}</p>`).join(""):"<p>No updates yet.</p>"}
     ${extra}</div>`;
 }
@@ -850,11 +850,11 @@ function expRoll(list,canEdit){
 }
 function fundView(collected,spent,due){
   ensureDocs();
-  return `<div class="card"><h3>Association money</h3>
+  return `<div class="card"><h3>Fund position</h3>
     <p>Collected <b>${ugx(collected)}</b> · still to collect <b>${ugx(due)}</b> · spent <b>${ugx(spent)}</b> · account balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,due)}</div>
     ${howPayView(false)}
-    <div class="card"><h3>Expenditure</h3>
+    <div class="card"><h3>Money out</h3>
     ${expTick(DB.expenses.filter(e=>e.seen!==false))}</div>
     ${bankView(false)}`;
 }
@@ -1015,7 +1015,7 @@ function treasHome(st,collected,spent){
   const red=st.filter(x=>x.code==="no");
   const wait=st.filter(x=>x.code==="wait");
   return `<div class="card">
-    <h3>Treasurer desk</h3>
+    <h3>Treasurer home</h3>
     ${(()=>{const b=bestContributor(); return b?`<p class="best">Best contributor: ${esc(b.name)} · ${ugx(b.paid)}</p>`:"";})()}
     <label>News ticker (shown on first page only)</label>
     <textarea id="tickEdit" rows="2">${esc((DB.settings.tickerText||""))}</textarea>
@@ -1445,8 +1445,8 @@ function expView(collected,spent){
     <label>C/O</label><input id="exBy"/>
     <button class="btn gold" style="margin-top:8px" onclick="addExp()">Add expense</button>
   </div>
-  <div class="card"><h3>Static list (edit here)</h3>${expRoll(DB.expenses,true)}</div>
-  <div class="card"><h3>Ticker</h3>${expTick(DB.expenses)}</div>`;
+  <div class="card"><h3>List — edit</h3>${expRoll(DB.expenses,true)}</div>
+  <div class="card"><h3>Rolling list</h3>${expTick(DB.expenses)}</div>`;
 }
 function toggleSeen(i){
   if(!needPin()) return;
@@ -1748,7 +1748,7 @@ function howPayView(isTreas){
   ensureDocs();
   const pays=DB.settings.payMethods||[];
   const payBox=pays.map(p=>`<button class="pay-pill" style="background:${p.color||'#333'};color:#111" onclick="openPay('${p.id}')">${esc(p.name)}</button>`).join("");
-  return `<div class="card"><h3>For you — how to pay</h3>
+  return `<div class="card"><h3>Pay in</h3>
     <p>Stanbic ${BANK}. Tap a company.</p>${payBox}</div>`+
     (isTreas?`<div class="card"><h3>Edit pay methods</h3>
       <textarea id="payEdit" rows="8">${esc(JSON.stringify(pays,null,2))}</textarea>
@@ -1756,7 +1756,7 @@ function howPayView(isTreas){
 }
 function constitutionView(isTreas){
   ensureDocs();
-  return `<div class="card"><h3>Constitution</h3>
+  return `<div class="card"><h3>Our rules</h3>
     <pre style="white-space:pre-wrap">${esc(DB.settings.constitution||"Not posted")}</pre></div>`+
     (isTreas?`<div class="card"><textarea id="conEdit" rows="8">${esc(DB.settings.constitution||"")}</textarea>
       <button class="btn gold" onclick="saveConstitution()">Save</button>
@@ -1764,7 +1764,7 @@ function constitutionView(isTreas){
 }
 function activitiesView(isTreas){
   ensureDocs();
-  return `<div class="card"><h3>Activities</h3>
+  return `<div class="card"><h3>What is on</h3>
     <pre style="white-space:pre-wrap">${esc(DB.settings.activities||"No activities posted yet.")}</pre></div>`+
     (isTreas?`<div class="card"><textarea id="actEdit" rows="8">${esc(DB.settings.activities||"")}</textarea>
       <button class="btn gold" onclick="saveActivities()">Save</button>
@@ -1773,7 +1773,7 @@ function activitiesView(isTreas){
 function bankView(isTreas){
   ensureDocs();
   const files=(DB.settings.bankFiles||[]).filter(f=>isTreas||f.seen!==false);
-  return `<div class="card"><h3>Bank statements</h3>
+  return `<div class="card"><h3>Bank papers</h3>
     ${files.map((f,i)=>`<div class="row" style="justify-content:space-between;padding:6px 0">
       <a href="${f.data}" download="${esc(f.name)}">${esc(f.name)}</a>
       ${isTreas?`<span><button class="eye" onclick="toggleBank(${i})">${f.seen===false?"🙈":"👁"}</button>
@@ -1789,15 +1789,15 @@ function docsView(isTreas){
   const files=(DB.settings.bankFiles||[]).filter(f=>isTreas||f.seen!==false);
   const payBox=pays.map(p=>`<button class="pay-pill" style="background:${p.color||'#333'};color:#111" onclick="openPay('${p.id}')">${esc(p.name)}</button>`).join("");
   const memberBlocks=`
-    <div class="card"><h3>For you — how to pay</h3>
+    <div class="card"><h3>Pay in</h3>
       <p>Stanbic ${BANK}. Tap a company.</p>${payBox}</div>
-    <div class="card"><h3>Constitution</h3>
-      <button class="btn ghost" onclick="openModal('<h3>Constitution</h3><pre style=white-space:pre-wrap>'+esc(DB.settings.constitution||'Not posted')+'</pre>')">Open summary</button>
+    <div class="card"><h3>Our rules</h3>
+      <button class="btn ghost" onclick="openModal('<h3>Our rules</h3><pre style=white-space:pre-wrap>'+esc(DB.settings.constitution||'Not posted')+'</pre>')">Open summary</button>
     </div>
-    <div class="card"><h3>Activities</h3>
+    <div class="card"><h3>What is on</h3>
       <pre style="white-space:pre-wrap">${esc(DB.settings.activities||"No activities posted yet.")}</pre>
     </div>
-    <div class="card"><h3>Bank statements</h3>
+    <div class="card"><h3>Bank papers</h3>
       ${files.map((f,i)=>`<div class="row" style="justify-content:space-between;padding:6px 0">
         <a href="${f.data}" download="${esc(f.name)}">${esc(f.name)}</a>
         ${isTreas?`<span><button class="eye" onclick="toggleBank(${i})">${f.seen===false?"🙈":"👁"}</button>
