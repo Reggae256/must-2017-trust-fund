@@ -450,7 +450,7 @@ function pushCloudNow(){
   alert("Uploaded this phone's book to the live ledger.");
 }
 initFirebase();
-
+try{ setInterval(function(){ try{ beatPresence(); }catch(e){} }, 25000); }catch(e){}
 
 function monthsBetween(from, to){
   return (to.getFullYear()-from.getFullYear())*12 + (to.getMonth()-from.getMonth()) + 1;
