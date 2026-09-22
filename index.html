@@ -2590,7 +2590,7 @@ function payLogoRow(pays){
 function howPayView(isTreas){
   ensureDocs();
   const pays=DB.settings.payMethods||[];
-  return `<div class="card"><h3>Pay in</h3>
+  return `<div class="card"><h3>Pay in</h3><p style="font-size:.75rem;color:var(--muted)">Logos · equal size · FlexiPay shield</p>
     <p>Bank account ${BANK} <button class="btn ghost" onclick="copyText('${BANK}')">⧉ copy account</button></p>
     <p>Tap a logo. Codes copy on the popup.</p>
     ${payLogoRow(pays)}</div>`+
@@ -2633,7 +2633,7 @@ function docsView(isTreas){
   const files=(DB.settings.bankFiles||[]).filter(f=>isTreas||f.seen!==false);
   const payBox=payLogoRow(pays);
   const memberBlocks=`
-    <div class="card"><h3>Pay in</h3>
+    <div class="card"><h3>Pay in</h3><p style="font-size:.75rem;color:var(--muted)">Logos · equal size · FlexiPay shield</p>
       <p>Bank account ${BANK} <button class="btn ghost" onclick="copyText('${BANK}')">⧉ copy account</button></p>
       <p>Tap a logo. Codes copy on the popup.</p>${payBox}</div>
     <div class="card"><h3>Trust fund Association Constitution</h3>
