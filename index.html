@@ -151,7 +151,7 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .name-pick{font-size:.85rem}
 .name-hints{margin-top:8px;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#0f0f0f}
 .name-hints:empty{display:none}
-.name-hint{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #2a2a2a;color:var(--ink);padding:12px 14px;font:inherit;cursor:pointer}
+.name-hint{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #2a2a2a;color:var(--ink);padding:14px 14px;min-height:48px;font:inherit;cursor:pointer;-webkit-tap-highlight-color:rgba(245,209,90,.25)}
 .name-hint:last-child{border-bottom:0}
 .exp-head{background:#111;color:#f5d15a;font-weight:700;padding:8px 12px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;letter-spacing:.04em;text-transform:uppercase;font-size:.75rem}
 .exp-tick{border-radius:0 0 10px 10px;height:180px}
@@ -662,8 +662,16 @@ function memberHome(st){
   const found = who ? DB.members.map(m=>({m,...classify(m,new Date())})).find(x=>x.m.name.toLowerCase()===who.toLowerCase()) : null;
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
+    const opts=DB.members.slice().sort((a,b)=>a.name.localeCompare(b.name))
+      .map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
     return `<div class="card"><h3>Sign in to your account</h3>
-      <input id="whoBox" autocomplete="off" inputmode="text" placeholder="Type your name, phone ending, or code" oninput="filterSignNames()" onfocus="filterSignNames()"/>
+      <label>Pick your name</label>
+      <select id="whoPick" onchange="pickSignId(this.value)">
+        <option value="">Tap here to choose</option>
+        ${opts}
+      </select>
+      <label>Or type name / phone / code</label>
+      <input id="whoBox" autocomplete="off" inputmode="text" placeholder="Start typing…" oninput="filterSignNames()"/>
       <div id="nameHints" class="name-hints"></div>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" onclick="openMyStatus()">Open my status</button>
@@ -731,15 +739,19 @@ function filterSignNames(){
     if(digits.length>=3 && ph.indexOf(digits)>=0) return true;
     if((m.code||"").toLowerCase().indexOf(q)>=0) return true;
     return false;
-  }).slice(0,12);
-  out.innerHTML=hits.map(m=>`<button type="button" class="name-hint" onclick="pickSignName(${JSON.stringify(m.name)})">${esc(m.name)}</button>`).join("");
+  }).slice(0,20);
+  out.innerHTML=hits.map(m=>`<button type="button" class="name-hint" onclick="pickSignId(${m.id})">${esc(m.name)}</button>`).join("");
+}
+function pickSignId(id){
+  const m=DB.members.find(x=>String(x.id)===String(id));
+  if(!m) return;
+  who=m.name;
+  saveSess();
+  render();
 }
 function pickSignName(name){
-  const box=document.getElementById("whoBox");
-  if(box) box.value=name;
-  const out=document.getElementById("nameHints");
-  if(out) out.innerHTML="";
-  who=name; render();
+  const m=DB.members.find(x=>(x.name||"").toLowerCase()===String(name||"").toLowerCase());
+  if(m) pickSignId(m.id);
 }
 
 function openMyStatus(){
