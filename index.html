@@ -667,8 +667,13 @@ function memberHome(st){
     const pending=DB.members.find(x=>String(x.id)===String(window._signId||""));
     if(!pending && window._typeSign){
       return `<div class="card"><h3>Sign in</h3>
-        <label>Type your registered name</label>
-        <input id="whoBox" autocomplete="off" placeholder="Full name as on the register"/>
+        <label>Pick or type your registered name</label>
+        <select id="whoPick" onchange="chooseSignName(this.value)">
+          <option value="">Tap a registered name</option>
+          ${opts}
+        </select>
+        <input id="whoBox" autocomplete="off" placeholder="Or start typing to check spelling" oninput="filterSignNames()"/>
+        <div id="nameHints" class="name-hints"></div>
         <div class="row" style="margin-top:10px">
           <button class="btn gold" onclick="typeSignName()">Continue</button>
           <button class="btn ghost" onclick="window._typeSign=false;render()">Back to list</button>
@@ -707,7 +712,10 @@ function memberHome(st){
       <div class="row" style="justify-content:space-between;align-items:center">
         <div class="row" style="align-items:center">${found.m.photo?`<img class="photo" src="${found.m.photo}"/>`:""}
         <h3 style="margin:0">${esc(found.m.name)}</h3></div>
-        <button class="btn ghost" onclick="who='';render()">Switch member</button>
+        <div style="text-align:right">
+          <button class="btn ghost" onclick="who='';window._signId='';render()">Switch member</button>
+          <div style="margin-top:6px"><button class="btn ghost" onclick="signOutMember()">Sign out</button></div>
+        </div>
       </div>
       <span class="pill ${found.code==='ok'?'ok':found.code==='wait'?'wait':found.code==='no'?'no':'offp'}">${found.label}</span>
       <p>Your paid total <b>${ugx(found.m.paid)}</b></p>
@@ -749,7 +757,7 @@ function filterSignNames(){
   const q=(box.value||"").trim().toLowerCase();
   const digits=q.replace(/\D/g,"");
   if(q.length<1){ out.innerHTML=""; return; }
-  const hits=DB.members.filter(m=>{
+  const hits=DB.members.filter(m=>{ if(!m.active) return false;
     const n=(m.name||"").toLowerCase();
     if(n.indexOf(q)>=0) return true;
     const ph=String(m.phone||"").replace(/\D/g,"");
@@ -771,6 +779,19 @@ function typeSignName(){
     return;
   }
   chooseSignName(loose[0].id);
+}
+
+
+function signOutMember(){
+  who=""; window._signId=""; window._typeSign=false;
+  try{ sessionStorage.removeItem(SESSKEY); }catch(e){}
+  tab="home"; render();
+}
+function signOutTreasurer(){
+  authed=false; mode="member"; tab="home";
+  who=""; window._signId=""; window._typeSign=false;
+  try{ sessionStorage.removeItem(SESSKEY); }catch(e){}
+  render();
 }
 
 function chooseSignName(id){
@@ -1123,7 +1144,10 @@ function treasHome(st,collected,spent){
   const red=st.filter(x=>x.code==="no");
   const wait=st.filter(x=>x.code==="wait");
   return `<div class="card">
-    <h3>Treasurer home</h3>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h3 style="margin:0">Treasurer home</h3>
+      <button class="btn ghost" onclick="signOutTreasurer()">Sign out</button>
+    </div>
     ${(()=>{const b=bestContributor(); return b?`<p class="best">Best contributor: ${esc(b.name)} · ${ugx(b.paid)}</p>`:"";})()}
     <label>News ticker (shown on first page only)</label>
     <textarea id="tickEdit" rows="2">${esc((DB.settings.tickerText||""))}</textarea>
