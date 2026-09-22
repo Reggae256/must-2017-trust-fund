@@ -222,6 +222,13 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .ticks{font-size:.8rem;letter-spacing:-1px;line-height:1;margin-left:4px}
 .ticks.one,.ticks.two{color:#8696a0}
 .ticks.blue{color:#53bdeb}
+.live-day{align-self:center;background:#182229;color:#8696a0;font-size:.72rem;padding:4px 10px;border-radius:8px;margin:8px 0}
+.live-fwd{font-size:.68rem;color:#8696a0;font-style:italic;margin-bottom:2px}
+.live-star{color:#ffd36a}
+.live-jump{position:absolute;right:14px;bottom:70px;width:36px;height:36px;border-radius:50%;border:0;background:#00a884;color:#fff;cursor:pointer}
+.live-wrap{position:relative}
+.live-search{width:42%;background:#2a3942;border:0;color:#e9edef;border-radius:16px;padding:6px 10px;font-size:.8rem}
+
 
 
 
@@ -276,7 +283,7 @@ function defaultSettings(){
   return {
     openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT,
     tickerText:"",
-    chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true},
+    chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true,star:true,fwd:true},
 
     theme:"dark", font:"md",
     treasurer:{name:"Atuha Reggae", email:EMAIL, phone:"256777649497"},
@@ -1714,7 +1721,7 @@ function chatView(isTreas){
 
 function chatCtl(){
   ensureDocs();
-  return Object.assign({on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true}, DB.settings.chatCtl||{});
+  return Object.assign({on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true,star:true,fwd:true}, DB.settings.chatCtl||{});
 }
 function pruneLive(){
   ensureDocs();
@@ -1746,24 +1753,35 @@ function liveChatBlock(isTreas){
   ensureDocs(); pruneLive();
   const c=chatCtl();
   const me=liveMe();
-  const list=(DB.live||[]).slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));
+  const q=(window._liveQ||"").toLowerCase();
+  const list=(DB.live||[]).slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))
+    .filter(m=>!q || (m.text||"").toLowerCase().indexOf(q)>=0 || (m.from||"").toLowerCase().indexOf(q)>=0 || (m.fileName||"").toLowerCase().indexOf(q)>=0);
   const pinned=list.filter(m=>m.pinned).slice(-1)[0];
+  let lastDay="";
   const rows=list.map(m=>{
     const mine=me && (m.from||"").toLowerCase()===me.toLowerCase();
     const reply=m.replyTo? (DB.live||[]).find(x=>x.id===m.replyTo):null;
     const reacts=Object.entries(m.reactions||{}).filter(([,n])=>n&&n.length).map(([e,n])=>e+" "+n.length).join(" ");
-    return `<div class="live-row ${mine?"me":"them"}" id="lv-${m.id}">
+    const day=liveDayLabel(m.at);
+    const chip=day!==lastDay?`<div class="live-day">${esc(day)}</div>`:"";
+    lastDay=day;
+    return `${chip}<div class="live-row ${mine?"me":"them"}" id="lv-${m.id}">
       <div class="live-b">
         ${mine?"":`<div class="live-who">${esc(m.from)}</div>`}
+        ${m.fwd?`<div class="live-fwd">Forwarded</div>`:""}
         ${reply?`<div class="live-reply">${esc(reply.from)}: ${esc((reply.text||"").slice(0,80))}</div>`:""}
-        <div class="live-tx">${esc(m.text||"")}</div>
+        <div class="live-tx">${m.star?`<span class="live-star">★ </span>`:""}${esc(m.text||"")}</div>
         ${liveMediaHtml(m)}
         <div class="live-meta">${new Date(m.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${m.pinned?" · pinned":""}${m.kind&&m.kind!=="text"?" · "+m.kind:""}${mine?liveTicks(m):""}</div>
       </div>
       ${reacts?`<div class="live-reacts">${esc(reacts)}</div>`:""}
       <div class="live-acts">
         ${c.reply && me?`<button type="button" onclick="setLiveReply('${m.id}')">Reply</button>`:""}
-        ${c.react && me?`<button type="button" onclick="reactLive('${m.id}','👍')">👍</button><button type="button" onclick="reactLive('${m.id}','❤️')">❤️</button>`:""}
+        ${c.react && me?`<button type="button" onclick="reactLive('${m.id}','👍')">👍</button><button type="button" onclick="reactLive('${m.id}','❤️')">❤️</button><button type="button" onclick="reactLive('${m.id}','😂')">😂</button>`:""}
+        ${c.star?`<button type="button" onclick="starLive('${m.id}')">★</button>`:""}
+        ${c.fwd?`<button type="button" onclick="fwdLive('${m.id}')">Forward</button>`:""}
+        <button type="button" onclick="copyLive('${m.id}')">Copy</button>
+        <button type="button" onclick="infoLive('${m.id}')">Info</button>
         ${isTreas?`<button type="button" onclick="pinLive('${m.id}')">Pin</button><button type="button" onclick="delLive('${m.id}')">Delete</button>`:""}
         ${!isTreas && c.deleteOwn && mine?`<button type="button" onclick="delLive('${m.id}')">Delete</button>`:""}
       </div>
@@ -1777,10 +1795,11 @@ function liveChatBlock(isTreas){
     <div class="live-wrap">
       <div class="live-top">
         <div><b>MUST 2017 room</b><br><small>${c.on?"Live":"Paused by treasurer"} · messages last ${ttlLab}</small></div>
+        <input class="live-search" placeholder="Search" value="${esc(window._liveQ||"")}" oninput="window._liveQ=this.value;render()"/>
         <small id="liveTyping">${c.showTyping?esc(typingLine()):""}</small>
       </div>
       ${pinned?`<div class="live-pin">📌 ${esc(pinned.from)}: ${esc((pinned.text||"").slice(0,90))}</div>`:""}
-      <div class="live-stream" id="liveStream">${rows}</div>
+      <div class="live-stream" id="liveStream">${rows}</div><button type="button" class="live-jump" title="Latest" onclick="const s=document.getElementById('liveStream'); if(s) s.scrollTop=s.scrollHeight">↓</button>
       ${!locked?`<div class="live-tools">
         ${c.allowCamera?`<label class="tool" title="Take photo">📷<input type="file" accept="image/*" capture="environment" hidden onchange="livePickFile(event,'photo')"/></label>`:""}
         ${c.allowPhoto?`<label class="tool" title="Photo from gallery">🖼️<input type="file" accept="image/*" hidden onchange="livePickFile(event,'photo')"/></label>`:""}
@@ -1824,6 +1843,8 @@ function liveCtlCard(){
     <label><input type="checkbox" id="ccDel" ${c.deleteOwn?"checked":""}/> Members may delete own messages</label>
     <label><input type="checkbox" id="ccType" ${c.showTyping?"checked":""}/> Show typing</label>
     <label><input type="checkbox" id="ccRec" ${c.receipts?"checked":""}/> Ticks (sent / delivered / seen)</label>
+    <label><input type="checkbox" id="ccStar" ${c.star?"checked":""}/> Star messages</label>
+    <label><input type="checkbox" id="ccFwd" ${c.fwd!==false?"checked":""}/> Forward</label>
     <h3 style="margin-top:14px">Media in the live room</h3>
     <label><input type="checkbox" id="ccPhoto" ${c.allowPhoto?"checked":""}/> Upload photos</label>
     <label><input type="checkbox" id="ccCam" ${c.allowCamera?"checked":""}/> Take photo with camera</label>
@@ -1852,6 +1873,8 @@ function saveChatCtl(){
     deleteOwn:!!document.getElementById("ccDel").checked,
     showTyping:!!document.getElementById("ccType").checked,
     receipts:!!document.getElementById("ccRec").checked,
+    star:!!document.getElementById("ccStar").checked,
+    fwd:!!document.getElementById("ccFwd").checked,
     allowPhoto:!!document.getElementById("ccPhoto").checked,
     allowCamera:!!document.getElementById("ccCam").checked,
     allowVideo:!!document.getElementById("ccVid").checked,
@@ -1863,6 +1886,45 @@ function saveChatCtl(){
 }
 function postLive(){ pushLiveMsg({kind:"text"}); }
 
+
+
+function liveDayLabel(iso){
+  const d=new Date(iso||Date.now());
+  const today=new Date(); today.setHours(0,0,0,0);
+  const that=new Date(d); that.setHours(0,0,0,0);
+  const diff=Math.round((today-that)/86400000);
+  if(diff===0) return "Today";
+  if(diff===1) return "Yesterday";
+  return d.toLocaleDateString(undefined,{weekday:"short", day:"numeric", month:"short", year:"numeric"});
+}
+function starLive(id){
+  if(!chatCtl().star) return;
+  const m=(DB.live||[]).find(x=>x.id===id); if(!m) return;
+  m.star=!m.star; save(); render();
+}
+function copyLive(id){
+  const m=(DB.live||[]).find(x=>x.id===id); if(!m) return;
+  const txt=(m.text||"")+(m.fileName?"\n"+m.fileName:"");
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert("Copied")).catch(()=>alert(txt));
+  else alert(txt);
+}
+function fwdLive(id){
+  if(!chatCtl().fwd) return;
+  if(!canPostLive()) return;
+  const m=(DB.live||[]).find(x=>x.id===id); if(!m) return;
+  pushLiveMsg({kind:m.kind||"text", text:m.text||"", data:m.data||"", mime:m.mime||"", fileName:m.fileName||"", fwd:true});
+}
+function infoLive(id){
+  const m=(DB.live||[]).find(x=>x.id===id); if(!m) return;
+  const seen=(m.seenBy||[]).join(", ")||"Not seen yet";
+  openModal(`<h3>Message info</h3>
+    <p>From <b>${esc(m.from)}</b></p>
+    <p>Posted ${new Date(m.at).toLocaleString()}</p>
+    <p>Status: ${esc(m.status||"sent")}</p>
+    <p>Seen by: ${esc(seen)}</p>
+    ${m.star?"<p>★ Starred</p>":""}
+    ${m.fwd?"<p>Forwarded</p>":""}`);
+}
 
 function liveTicks(m){
   if(!chatCtl().receipts) return "";
@@ -2189,6 +2251,13 @@ function printFlyer(){
 .ticks{font-size:.8rem;letter-spacing:-1px;line-height:1;margin-left:4px}
 .ticks.one,.ticks.two{color:#8696a0}
 .ticks.blue{color:#53bdeb}
+.live-day{align-self:center;background:#182229;color:#8696a0;font-size:.72rem;padding:4px 10px;border-radius:8px;margin:8px 0}
+.live-fwd{font-size:.68rem;color:#8696a0;font-style:italic;margin-bottom:2px}
+.live-star{color:#ffd36a}
+.live-jump{position:absolute;right:14px;bottom:70px;width:36px;height:36px;border-radius:50%;border:0;background:#00a884;color:#fff;cursor:pointer}
+.live-wrap{position:relative}
+.live-search{width:42%;background:#2a3942;border:0;color:#e9edef;border-radius:16px;padding:6px 10px;font-size:.8rem}
+
 
 
 
@@ -2440,7 +2509,7 @@ function ensureDocs(){
   if(DB.settings.constitution==null) DB.settings.constitution=defaultSettings().constitution;
   if(DB.settings.activities==null) DB.settings.activities="";
   if(!DB.settings.bankFiles) DB.settings.bankFiles=[];
-  if(!DB.settings.chatCtl) DB.settings.chatCtl={on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true};
+  if(!DB.settings.chatCtl) DB.settings.chatCtl={on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true,star:true,fwd:true};
   if(!DB.live) DB.live=[];
 }
 
