@@ -148,6 +148,10 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .exp-head{background:#111;color:#f5d15a;font-weight:700;padding:8px 12px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;letter-spacing:.04em;text-transform:uppercase;font-size:.75rem}
 .exp-tick{border-radius:0 0 10px 10px;height:180px}
 .exp-row{padding:8px 12px;border-bottom:1px solid #2a2a2a;font-size:.9rem}
+
+.exp-grid{display:grid;grid-template-columns:110px 1fr 120px 110px;gap:8px;align-items:center;padding:8px 12px}
+.exp-tick .exp-grid{border-bottom:1px solid #2a2a2a}
+
 .new-red{color:#ff4d3a;font-weight:700}
 
 @media(max-width:800px){
@@ -485,8 +489,8 @@ function loadSess(){
   }catch(e){}
 }
 loadSess();
-const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["docs","Docs"],["flyer","Flyer"],["backup","Backup"]];
-const TABS_M=[["home","My status"],["spend","Fund money"],["chat","Chat"],["profile","My details"],["docs","Docs"],["note","Write to treasurer"]];
+const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["howpay","How to pay"],["constitution","Constitution"],["activities","Activities"],["bank","Bank files"],["flyer","Flyer"],["backup","Backup"]];
+const TABS_M=[["home","My status"],["spend","Fund money"],["howpay","How to pay"],["constitution","Constitution"],["activities","Activities"],["bank","Bank files"],["chat","Chat"],["profile","My details"],["note","Write to treasurer"]];
 
 function needPin(){
   if(authed) return true;
@@ -613,7 +617,10 @@ function render(){
     if(tab==="profile") v.innerHTML=profileView();
     if(tab==="note") v.innerHTML=memberNoteView();
     if(tab==="chat") v.innerHTML=chatView(false);
-    if(tab==="docs") v.innerHTML=docsView(false);
+    if(tab==="howpay") v.innerHTML=howPayView(false);
+    if(tab==="constitution") v.innerHTML=constitutionView(false);
+    if(tab==="activities") v.innerHTML=activitiesView(false);
+    if(tab==="bank") v.innerHTML=bankView(false);
   } else {
     if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
     if(tab==="members") v.innerHTML=membersView();
@@ -621,7 +628,10 @@ function render(){
     if(tab==="pay") v.innerHTML=payView();
     if(tab==="chat") v.innerHTML=chatView(true);
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
-    if(tab==="docs") v.innerHTML=docsView(true);
+    if(tab==="howpay") v.innerHTML=howPayView(true);
+    if(tab==="constitution") v.innerHTML=constitutionView(true);
+    if(tab==="activities") v.innerHTML=activitiesView(true);
+    if(tab==="bank") v.innerHTML=bankView(true);
     if(tab==="flyer") v.innerHTML=flyerView(st);
     if(tab==="backup") v.innerHTML=backupView();
   }
@@ -824,16 +834,20 @@ function startMoneySlide(){
 }
 function expRoll(list,canEdit){
   const rows=(list.length?list:[{date:"—",item:"No expenditure yet",amount:0,by:""}]);
-  const line=e=>`<div class="exp-row"><b>${esc(e.date)}</b> · ${esc(e.item)} · C/O ${esc(e.by||"—")} · ${ugx(e.amount)}</div>`;
-  const body=rows.map(line).join("")+rows.map(line).join("");
-  const tools=canEdit?`<div class="row" style="margin-top:8px">${list.map((e,i)=>`
-    <span class="pill">${esc(e.item)}
+  const body=rows.map((e,i)=>`<tr>
+    <td>${esc(e.date||"—")}</td>
+    <td>${esc(e.item||"—")}</td>
+    <td>${esc(e.by||"—")}</td>
+    <td>${ugx(e.amount)}</td>
+    ${canEdit?`<td>
       <button class="eye" onclick="toggleSeen(${i})">${e.seen===false?"🙈":"👁"}</button>
       <button class="btn ghost" onclick="editExp(${i})">Edit</button>
       <button class="btn danger" onclick="delExp(${i})">✕</button>
-    </span>`).join("")}</div>`:"";
-  return `<div class="exp-head">Date · Item · C/O · Amount</div>
-    <div class="credits exp-tick"><div class="credits-inner">${body}</div></div>${tools}`;
+    </td>`:""}
+  </tr>`).join("");
+  return `<div class="sticky-exp"><table>
+    <thead><tr><th>Date</th><th>Item</th><th>C/O</th><th>Amount</th>${canEdit?"<th></th>":""}</tr></thead>
+    <tbody>${body}</tbody></table></div>`;
 }
 function fundView(collected,spent,due){
   const year=new Date().getFullYear();
@@ -843,7 +857,7 @@ function fundView(collected,spent,due){
     <p>Collected <b>${ugx(collected)}</b> · still to collect <b>${ugx(due)}</b> · spent <b>${ugx(spent)}</b> · account balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,due)}</div>
     <div class="card"><h3>Expenditure</h3>
-    ${expRoll(DB.expenses.filter(e=>e.seen!==false))}</div>`;
+    ${expTick(DB.expenses.filter(e=>e.seen!==false))}</div>`;
 }
 function personFields(id,label,obj){
   obj=obj||{};
@@ -1077,10 +1091,11 @@ function membersView(){
       </div>
     </div>
     <div class="card" style="overflow:auto">
-    <table><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Paid</th><th>Remaining</th><th>Status</th><th></th></tr></thead>
+    <table><thead><tr><th>#</th><th>Name</th><th>Code</th><th>Role</th><th>Paid</th><th>Remaining</th><th>Status</th><th></th></tr></thead>
     <tbody id="regBody">${rows.map((x,i)=>`<tr>
       <td>${i+1}</td>
       <td style="color:${x.code==='no'?'var(--red)':x.code==='wait'?'var(--amber)':x.code==='inactive'?'#777':'var(--green)'};font-weight:700">${esc(x.m.name)}</td>
+      <td><b>${esc(x.m.code||assignCode(x.m,false))}</b></td>
       <td>${esc(x.m.role)}</td>
       <td>${ugx(x.m.paid)}</td>
       <td>${ugx(x.remaining)}</td>
@@ -1416,6 +1431,12 @@ function downloadChatSummary(){
   a.click();
 }
 
+function expTick(list){
+  const rows=list.length?list:[{date:"—",item:"None",amount:0,by:"—"}];
+  const line=e=>`<div class="exp-grid"><span>${esc(e.date||"—")}</span><span>${esc(e.item||"—")}</span><span>${esc(e.by||"—")}</span><span>${ugx(e.amount)}</span></div>`;
+  return `<div class="exp-head exp-grid"><span>Date</span><span>Item</span><span>C/O</span><span>Amount</span></div>
+    <div class="credits exp-tick"><div class="credits-inner">${rows.map(line).join("")}${rows.map(line).join("")}</div></div>`;
+}
 function expView(collected,spent){
   return `<div class="card">
     <h3>Money out</h3>
@@ -1425,10 +1446,8 @@ function expView(collected,spent){
     <label>C/O</label><input id="exBy"/>
     <button class="btn gold" style="margin-top:8px" onclick="addExp()">Add expense</button>
   </div>
-  <div class="card">
-    ${expRoll(DB.expenses,true)}
-    <div style="margin-top:10px">${DB.expenses.map((e,i)=>`<button class="btn ghost" style="margin:4px 4px 0 0" onclick="toggleSeen(${i})">${e.seen===false?"Show: "+esc(e.item):"Hide: "+esc(e.item)}</button>`).join("")}</div>
-  </div>`;
+  <div class="card"><h3>Static list (edit here)</h3>${expRoll(DB.expenses,true)}</div>
+  <div class="card"><h3>Ticker</h3>${expTick(DB.expenses)}</div>`;
 }
 function toggleSeen(i){
   if(!needPin()) return;
@@ -1722,6 +1741,46 @@ function ensureDocs(){
   if(DB.settings.activities==null) DB.settings.activities="";
   if(!DB.settings.bankFiles) DB.settings.bankFiles=[];
 }
+
+function howPayView(isTreas){
+  ensureDocs();
+  const pays=DB.settings.payMethods||[];
+  const payBox=pays.map(p=>`<button class="pay-pill" style="background:${p.color||'#333'};color:#111" onclick="openPay('${p.id}')">${esc(p.name)}</button>`).join("");
+  return `<div class="card"><h3>For you — how to pay</h3>
+    <p>Stanbic ${BANK}. Tap a company.</p>${payBox}</div>`+
+    (isTreas?`<div class="card"><h3>Edit pay methods</h3>
+      <textarea id="payEdit" rows="8">${esc(JSON.stringify(pays,null,2))}</textarea>
+      <button class="btn gold" onclick="savePays()">Save</button></div>`:"");
+}
+function constitutionView(isTreas){
+  ensureDocs();
+  return `<div class="card"><h3>Constitution</h3>
+    <pre style="white-space:pre-wrap">${esc(DB.settings.constitution||"Not posted")}</pre></div>`+
+    (isTreas?`<div class="card"><textarea id="conEdit" rows="8">${esc(DB.settings.constitution||"")}</textarea>
+      <button class="btn gold" onclick="saveConstitution()">Save</button>
+      <button class="btn wa" onclick="shareText('MUST 2017 constitution',DB.settings.constitution)">Share WhatsApp</button></div>`:"");
+}
+function activitiesView(isTreas){
+  ensureDocs();
+  return `<div class="card"><h3>Activities</h3>
+    <pre style="white-space:pre-wrap">${esc(DB.settings.activities||"No activities posted yet.")}</pre></div>`+
+    (isTreas?`<div class="card"><textarea id="actEdit" rows="8">${esc(DB.settings.activities||"")}</textarea>
+      <button class="btn gold" onclick="saveActivities()">Save</button>
+      <button class="btn wa" onclick="shareText('MUST 2017 activities',DB.settings.activities)">Share WhatsApp</button></div>`:"");
+}
+function bankView(isTreas){
+  ensureDocs();
+  const files=(DB.settings.bankFiles||[]).filter(f=>isTreas||f.seen!==false);
+  return `<div class="card"><h3>Bank statements</h3>
+    ${files.map((f,i)=>`<div class="row" style="justify-content:space-between;padding:6px 0">
+      <a href="${f.data}" download="${esc(f.name)}">${esc(f.name)}</a>
+      ${isTreas?`<span><button class="eye" onclick="toggleBank(${i})">${f.seen===false?"🙈":"👁"}</button>
+        <button class="btn danger" onclick="delBank(${i})">✕</button></span>`:""}
+    </div>`).join("")||"<p>None uploaded.</p>"}
+    ${isTreas?`<label>Upload</label><input type="file" onchange="uploadBank(event)"/>`:""}
+  </div>`;
+}
+
 function docsView(isTreas){
   ensureDocs();
   const pays=DB.settings.payMethods||[];
@@ -1840,9 +1899,13 @@ function newCodeFor(id){
 function shareCode(id){
   const m=DB.members.find(x=>x.id==id); if(!m) return;
   if(!m.code) assignCode(m,false);
-  if(!m.phone){ alert("No phone on file"); return; }
-  const msg=`MUST Graduates 2017 Trust Fund\\nHello ${m.name}, your confidential login code is ${m.code}. Use it with your name on https://must-2017-trust-fund.vercel.app to see only your balance. Pay 10,000/month to Stanbic ${BANK}.`;
-  window.open(wa(m.phone,msg),"_blank");
+  const msg="MUST Graduates 2017 Trust Fund\nHello "+m.name+", your confidential login code is "+m.code+". Use it on https://must-2017-trust-fund.vercel.app to see only your balance. Pay 10,000/month to Stanbic "+BANK+".";
+  openModal(`<h3>Login code</h3>
+    <p>${esc(m.name)}</p>
+    <p style="font-size:2rem;letter-spacing:.18em;font-weight:800;color:var(--gold2)">${esc(m.code)}</p>
+    <p>Only the treasurer sees this. Send when ready.</p>
+    ${m.phone?`<a class="btn wa" target="_blank" href="${wa(m.phone,msg)}">Send on WhatsApp</a>`:"<p>No phone on file.</p>"}
+    <button class="btn ghost" onclick="closeModal()">Close</button>`);
 }
 function showFamily(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
