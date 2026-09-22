@@ -152,6 +152,12 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 
 .exp-grid{display:grid;grid-template-columns:110px 1fr 120px 110px;gap:8px;align-items:center;padding:8px 12px}
 .exp-tick .exp-grid{border-bottom:1px solid #2a2a2a}
+.date-pick{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0}
+.date-pick label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.date-wrap{display:flex;align-items:center;gap:6px}
+.date-wrap input[type=date]{min-width:160px;min-height:42px;font-size:1rem;padding:8px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px}
+.cal-btn{min-width:42px;min-height:42px;font-size:1.2rem;border-radius:10px}
+.pay-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
 .kebab{min-width:36px;font-size:1.25rem;line-height:1}
 .kebab-pop{position:absolute;z-index:50;background:var(--card);border:1px solid var(--line);border-radius:12px;min-width:160px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .kebab-pop button{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--ink);padding:8px 10px;font:inherit;cursor:pointer;border-radius:8px}
@@ -560,7 +566,7 @@ function applyUi(){
   document.documentElement.setAttribute("data-theme", s.theme||"dark");
   document.documentElement.setAttribute("data-font", s.font||"md");
   const foot=document.getElementById("foot");
-  if(foot) foot.innerHTML=`<span class="live-dot ${membersOnline()?"on":"off"}"></span>`+(membersOnline()?"Members online":"No members online")+" · © "+new Date().getFullYear()+" MUST Education Graduates 2017";
+  if(foot) foot.innerHTML=`<span class="live-dot ${membersOnline()?"on":"off"}"></span>`;
 }
 document.addEventListener("click",e=>{
   if(!e.target.closest(".gear") && !e.target.closest("#uiMenu")){
@@ -1200,11 +1206,20 @@ function showStmt(id){
   const cl=classify(m,new Date());
   openModal(`<h3>Statement · ${esc(m.name)}</h3>
     <p>Role ${esc(m.role)} · phone ${esc(m.phone||"—")} · paid ${ugx(m.paid)} · remaining ${ugx(cl.remaining)}</p>
-    <div class="row" style="align-items:flex-end">
-      <span title="Filter by dates">📅</span>
-      <input id="stFrom" type="date"/>
-      <input id="stTo" type="date"/>
-      <button class="btn ghost" onclick="filterStmt(${id})" title="Filter">🔎</button>
+    <div class="date-pick">
+      <label>From
+        <span class="date-wrap">
+          <input id="stFrom" type="date" onclick="this.showPicker&&this.showPicker()"/>
+          <button type="button" class="cal-btn" onclick="openCal('stFrom')" title="Open calendar">📅</button>
+        </span>
+      </label>
+      <label>To
+        <span class="date-wrap">
+          <input id="stTo" type="date" onclick="this.showPicker&&this.showPicker()"/>
+          <button type="button" class="cal-btn" onclick="openCal('stTo')" title="Open calendar">📅</button>
+        </span>
+      </label>
+      <button class="btn ghost" onclick="filterStmt(${id})" title="Filter">🔎 Apply</button>
     </div>
     <div class="row" style="margin:8px 0">
       <button class="btn gold" onclick="printStmt(${id})">Print statement</button>
@@ -1423,9 +1438,21 @@ function treasurerDisplayName(){
 }
 function membersOnline(){
   const now=Date.now();
-  const list=(window._presence||[]).filter(p=>now-Number(p.at||0)<120000 && p.kind==="member" && p.name);
+  const tname=String(treasurerDisplayName()||"atuha reggae").toLowerCase();
+  const isTreas=n=>{
+    n=String(n||"").toLowerCase();
+    return !n || n===tname || /atuha\s*reggae/.test(n) || isTreasurerName(n);
+  };
+  const list=(window._presence||[]).filter(p=>{
+    if(now-Number(p.at||0)>=120000) return false;
+    if(p.kind==="treasurer" || p.kind==="visitor") return false;
+    if(!p.name) return false;
+    if(isTreas(p.name)) return false;
+    return p.kind==="member";
+  });
   if(list.length) return true;
-  return mode==="member" && !!who && !isTreasurerName(who);
+  if(mode==="member" && who && !isTreas(who)) return true;
+  return false;
 }
 function isTreasurerName(name){
   const t=treasurerDisplayName().toLowerCase();
@@ -1456,7 +1483,7 @@ function listenPresence(){
       const foot=document.getElementById("foot");
       if(foot){
         const on=membersOnline();
-        foot.innerHTML=`<span class="live-dot ${on?"on":"off"}"></span>`+(on?"Members online":"No members online")+" · © "+new Date().getFullYear()+" MUST Education Graduates 2017";
+        foot.innerHTML=`<span class="live-dot ${on?"on":"off"}"></span>`;
       }
     }, ()=>{});
   }catch(e){}
@@ -1854,7 +1881,10 @@ function howPayView(isTreas){
   const pays=DB.settings.payMethods||[];
   const payBox=pays.map(p=>`<button class="pay-pill" style="background:${p.color||'#333'};color:#111" onclick="openPay('${p.id}')">${esc(p.name)}</button>`).join("");
   return `<div class="card"><h3>Pay in</h3>
-    <p>Stanbic ${BANK}. Tap a company.</p>${payBox}</div>`+
+    <p>Stanbic ${BANK} <button class="btn ghost" onclick="copyText('${BANK}')">⧉ copy account</button></p>
+    <p>Tap a company. Use ⧉ to copy the code.</p>
+    ${pays.map(p=>`<div class="pay-line"><button class="pay-pill" style="background:${p.color||'#333'};color:#111" onclick="openPay('${p.id}')">${esc(p.name)}</button>
+      <b>${esc(p.ussd)}</b> <button class="btn ghost" onclick="copyText('${esc(p.ussd)}')">⧉</button></div>`).join("")}</div>`+
     (isTreas?`<div class="card"><h3>Edit pay methods</h3>
       <textarea id="payEdit" rows="8">${esc(JSON.stringify(pays,null,2))}</textarea>
       <button class="btn gold" onclick="savePays()">Save</button></div>`:"");
@@ -1927,13 +1957,31 @@ function docsView(isTreas){
   }
   return memberBlocks+treas;
 }
+function copyText(v){
+  v=String(v||"");
+  const go=()=>alert("Copied: "+v);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(go).catch(fallback);
+  } else fallback();
+  function fallback(){
+    try{ const i=document.createElement("input"); i.value=v; document.body.appendChild(i); i.select(); document.execCommand("copy"); i.remove(); go(); }
+    catch(e){ prompt("Copy this", v); }
+  }
+}
+function openCal(id){
+  const el=document.getElementById(id); if(!el) return;
+  el.focus();
+  if(el.showPicker) try{ el.showPicker(); }catch(e){}
+}
 function openPay(id){
   ensureDocs();
   const p=(DB.settings.payMethods||[]).find(x=>x.id===id); if(!p) return;
-  const msg=`MUST 2017 Trust Fund payment via ${p.name}\\n${p.ussd}\\n${p.note}\\nStanbic ${BANK}`;
-  openModal(`<h3>${esc(p.name)}</h3><p><b>${esc(p.ussd)}</b></p><p>${esc(p.note)}</p>
-    <p>Account ${BANK}</p>
-    <a class="btn wa" href="${wa(DB.settings.treasurer&&DB.settings.treasurer.phone||'',msg)}" target="_blank">Share on WhatsApp</a>`);
+  const msg="MUST 2017 Trust Fund payment via "+p.name+"\n"+p.ussd+"\n"+p.note+"\nStanbic "+BANK;
+  openModal(`<h3>${esc(p.name)}</h3>
+    <p><b>${esc(p.ussd)}</b> <button class="btn ghost" onclick="copyText(${JSON.stringify(p.ussd)})">⧉</button></p>
+    <p>${esc(p.note)}</p>
+    <p>Account ${BANK} <button class="btn ghost" onclick="copyText('${BANK}')">⧉</button></p>
+    <a class="btn wa" href="${wa((DB.settings.treasurer&&DB.settings.treasurer.phone)||'',msg)}" target="_blank">Share on WhatsApp</a>`);
 }
 function saveConstitution(){ if(!needPin())return; ensureDocs(); DB.settings.constitution=document.getElementById("conEdit").value; save(); alert("Saved"); render(); }
 function saveActivities(){ if(!needPin())return; ensureDocs(); DB.settings.activities=document.getElementById("actEdit").value; save(); alert("Saved"); render(); }
