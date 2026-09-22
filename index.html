@@ -240,15 +240,12 @@ function load(){
   return seed();
 }
 let DB=load();
-const MUST_FIREBASE={apiKey:"AIzaSyBJqm0uCUciJuySBxqScl9vRgtoIvJOW00",authDomain:"must-2017-trust.firebaseapp.com",projectId:"must-2017-trust",storageBucket:"must-2017-trust.firebasestorage.app",messagingSenderId:"933027548846",appId:"1:933027548846:web:fab72bcc6dec4370afe73f"}; /* public web config — security is Firestore rules */
+const MUST_FIREBASE={apiKey:"AIzaSyBJqm0uCUciJuySBxqScl9vRgtoIvJOWO0",authDomain:"must-2017-trust.firebaseapp.com",projectId:"must-2017-trust",storageBucket:"must-2017-trust.firebasestorage.app",messagingSenderId:"933027548846",appId:"1:933027548846:web:fab72bcc6dec4370afe73f"}; /* public web config — security is Firestore rules */
 const FBKEY="must2017trust.fb";
 let FB={db:null,auth:null,user:null,unsub:null,pushing:false,skip:false,ok:false,err:"",at:0};
 function loadFbCfg(){
-  try{
-    const local=JSON.parse(localStorage.getItem(FBKEY)||"null");
-    if(local && local.apiKey) return local;
-  }catch(e){}
-  return MUST_FIREBASE;
+  if(MUST_FIREBASE && MUST_FIREBASE.apiKey) return MUST_FIREBASE;
+  try{ return JSON.parse(localStorage.getItem(FBKEY)||"null"); }catch(e){ return null; }
 }
 function saveFbCfg(cfg){
   localStorage.setItem(FBKEY, JSON.stringify(cfg||{}));
@@ -275,6 +272,9 @@ function initFirebase(){
     }
     FB.ok=true;
     listenCloud();
+    if(FB.auth){
+      FB.auth.getRedirectResult().then(res=>{ if(res && res.user) afterGoogle(res.user); }).catch(function(){});
+    }
   }catch(e){ FB.err=String(e.message||e); }
 }
 function listenCloud(){
@@ -326,20 +326,33 @@ function cloudLabel(){
   if(FB.ok) return "Live book is readable on this phone. Sign in with Google (Backup) to publish changes.";
   return FB.err ? ("Cloud error: "+FB.err) : "This phone only.";
 }
+function googleProvider(){
+  const p=new firebase.auth.GoogleAuthProvider();
+  p.setCustomParameters({prompt:"select_account"});
+  return p;
+}
+function afterGoogle(user){
+  FB.user=user;
+  pushCloud();
+  alert("Signed in as "+(user.email||"treasurer")+". This device can publish to the live book.");
+  render();
+}
 function googleSignIn(){
   if(!FB.auth){ alert("Refresh the page, then try again."); return; }
-  const provider=new firebase.auth.GoogleAuthProvider();
-  FB.auth.signInWithPopup(provider).then(res=>{
-    FB.user=res.user;
-    pushCloud();
-    alert("Signed in as "+(FB.user.email||"treasurer")+". This phone can now publish to the live book.");
-    render();
+  const mobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const go=mobile ? FB.auth.signInWithRedirect(googleProvider()) : FB.auth.signInWithPopup(googleProvider());
+  Promise.resolve(go).then(res=>{
+    if(res && res.user) afterGoogle(res.user);
   }).catch(e=>{
-    const m=e.code||e.message||String(e);
-    if(String(m).indexOf("auth/operation-not-allowed")>=0)
-      alert("Enable Google sign-in in Firebase: Authentication → Sign-in method → Google → Enable. Add authorized domain must-2017-trust-fund.vercel.app");
-    else if(String(m).indexOf("auth/unauthorized-domain")>=0)
-      alert("In Firebase Authentication → Settings → Authorized domains, add must-2017-trust-fund.vercel.app and localhost");
+    const m=String(e.code||e.message||e);
+    if(m.indexOf("api-key-not-valid")>=0)
+      alert("The API key in this file is wrong (it was copied from a photo). In Firebase: Project settings (gear) → Your apps → Web app → copy firebaseConfig and paste it in the box on this Backup page, then tap Link.");
+    else if(m.indexOf("auth/operation-not-allowed")>=0)
+      alert("Enable Google in Authentication → Sign-in method.");
+    else if(m.indexOf("auth/unauthorized-domain")>=0)
+      alert("Add must-2017-trust-fund.vercel.app under Authentication → Authorized domains.");
+    else if(m.indexOf("popup-closed")>=0 || m.indexOf("cancelled")>=0)
+      return;
     else alert("Sign-in failed: "+m);
   });
 }
