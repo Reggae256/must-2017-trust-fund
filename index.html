@@ -145,6 +145,9 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .pay-pill{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:10px 12px;margin:6px 6px 0 0;cursor:pointer;font-weight:700;border:0}
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#666;vertical-align:middle}
 .live-dot.on{background:#3dd68c;box-shadow:0 0 8px #3dd68c}
+.exp-head{background:#111;color:#f5d15a;font-weight:700;padding:8px 12px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;letter-spacing:.04em;text-transform:uppercase;font-size:.75rem}
+.exp-tick{border-radius:0 0 10px 10px;height:180px}
+.exp-row{padding:8px 12px;border-bottom:1px solid #2a2a2a;font-size:.9rem}
 .new-red{color:#ff4d3a;font-weight:700}
 
 @media(max-width:800px){
@@ -821,15 +824,16 @@ function startMoneySlide(){
 }
 function expRoll(list,canEdit){
   const rows=(list.length?list:[{date:"—",item:"No expenditure yet",amount:0,by:""}]);
-  const body=rows.map((e,i)=>`<tr>
-    <td>${esc(e.date)}</td>
-    <td>${esc(e.item)}<div style="color:var(--muted);font-size:.75rem">C/O ${esc(e.by||"—")}</div></td>
-    <td>${ugx(e.amount)}</td>
-    ${canEdit?`<td><button class="eye" onclick="toggleSeen(${i})">${e.seen===false?"🙈":"👁"}</button>
+  const line=e=>`<div class="exp-row"><b>${esc(e.date)}</b> · ${esc(e.item)} · C/O ${esc(e.by||"—")} · ${ugx(e.amount)}</div>`;
+  const body=rows.map(line).join("")+rows.map(line).join("");
+  const tools=canEdit?`<div class="row" style="margin-top:8px">${list.map((e,i)=>`
+    <span class="pill">${esc(e.item)}
+      <button class="eye" onclick="toggleSeen(${i})">${e.seen===false?"🙈":"👁"}</button>
       <button class="btn ghost" onclick="editExp(${i})">Edit</button>
-      <button class="btn danger" onclick="delExp(${i})">✕</button></td>`:""}
-  </tr>`).join("");
-  return `<div class="sticky-exp"><table><thead><tr><th>Date</th><th>Item / C/O</th><th>Amount</th>${canEdit?"<th></th>":""}</tr></thead><tbody>${body}</tbody></table></div>`;
+      <button class="btn danger" onclick="delExp(${i})">✕</button>
+    </span>`).join("")}</div>`:"";
+  return `<div class="exp-head">Date · Item · C/O · Amount</div>
+    <div class="credits exp-tick"><div class="credits-inner">${body}</div></div>${tools}`;
 }
 function fundView(collected,spent,due){
   const year=new Date().getFullYear();
@@ -1084,6 +1088,7 @@ function membersView(){
         <button class="btn ghost" onclick="showStmt(${x.m.id})">Statement</button>
         ${x.m.profile&&x.m.profile.submitted?`<button class="btn ghost" onclick="showFamily(${x.m.id})">Family</button>`:""}
         <button class="btn ghost" onclick="fillEdit(${x.m.id})">Edit</button>
+        <button class="btn ghost" onclick="newCodeFor(${x.m.id})">New code</button>
         <button class="btn wa" onclick="shareCode(${x.m.id})">Share code</button>
         <button class="btn danger" onclick="deleteMember(${x.m.id})">Delete</button>
       </td>
@@ -1138,8 +1143,9 @@ function saveMember(update){
   const existing=DB.members.find(m=>m.name.toLowerCase()===name.toLowerCase());
   if(update){
     if(!existing){ alert("No member with that name"); return; }
-    existing.phone=phone; existing.role=role; existing.fee=fee; existing.paid=paid; existing.code=code.trim();
-    existing.active=fee>0; existing.tx=existing.tx||[];
+    existing.phone=phone; existing.role=role; existing.fee=fee; existing.paid=paid;
+    if(code.trim()) existing.code=code.trim(); else assignCode(existing,false);
+    existing.active=fee>0; assignCode(existing,false); existing.tx=existing.tx||[];
     existing.tx.push({type:"Updated by treasurer",amount:paid,at:new Date().toISOString()});
   } else {
     if(existing){ alert("Name already exists — use Update"); return; }
@@ -1718,26 +1724,9 @@ function docsView(isTreas){
   const pays=DB.settings.payMethods||[];
   const files=(DB.settings.bankFiles||[]).filter(f=>isTreas||f.seen!==false);
   const payBox=pays.map(p=>`<button class="pay-pill" style="background:${p.color||'#333'};color:#111" onclick="openPay('${p.id}')">${esc(p.name)}</button>`).join("");
-  let treas="";
-  if(isTreas){
-    treas=`<div class="card"><h3>Edit pages (treasurer)</h3>
-      <label>Constitution summary</label><textarea id="conEdit" rows="6">${esc(DB.settings.constitution||"")}</textarea>
-      <button class="btn gold" onclick="saveConstitution()">Save constitution</button>
-      <button class="btn wa" onclick="shareText('MUST 2017 constitution',DB.settings.constitution)">Share WhatsApp</button>
-      <label>Activities</label><textarea id="actEdit" rows="5">${esc(DB.settings.activities||"")}</textarea>
-      <button class="btn gold" onclick="saveActivities()">Save activities</button>
-      <button class="btn wa" onclick="shareText('MUST 2017 activities',DB.settings.activities)">Share WhatsApp</button>
-      <label>Pay methods (JSON list name, ussd, note)</label>
-      <textarea id="payEdit" rows="6">${esc(JSON.stringify(pays,null,2))}</textarea>
-      <button class="btn gold" onclick="savePays()">Save pay methods</button>
-      <label>Upload bank statement (image or PDF as file)</label>
-      <input type="file" onchange="uploadBank(event)"/>
-    </div>`;
-  }
-  return `<div class="card"><h3>How to pay</h3>
-      <p>Stanbic ${BANK}. Choose a company:</p>
-      ${payBox}
-    </div>
+  const memberBlocks=`
+    <div class="card"><h3>For you — how to pay</h3>
+      <p>Stanbic ${BANK}. Tap a company.</p>${payBox}</div>
     <div class="card"><h3>Constitution</h3>
       <button class="btn ghost" onclick="openModal('<h3>Constitution</h3><pre style=white-space:pre-wrap>'+esc(DB.settings.constitution||'Not posted')+'</pre>')">Open summary</button>
     </div>
@@ -1750,7 +1739,24 @@ function docsView(isTreas){
         ${isTreas?`<span><button class="eye" onclick="toggleBank(${i})">${f.seen===false?"🙈":"👁"}</button>
           <button class="btn danger" onclick="delBank(${i})">✕</button></span>`:""}
       </div>`).join("")||"<p>None uploaded.</p>"}
-    </div>${treas}`;
+    </div>`;
+  let treas="";
+  if(isTreas){
+    treas=`<div class="card"><h3>Edit pages (treasurer only)</h3>
+      <label>Constitution summary</label><textarea id="conEdit" rows="6">${esc(DB.settings.constitution||"")}</textarea>
+      <button class="btn gold" onclick="saveConstitution()">Save constitution</button>
+      <button class="btn wa" onclick="shareText('MUST 2017 constitution',DB.settings.constitution)">Share WhatsApp</button>
+      <label>Activities</label><textarea id="actEdit" rows="5">${esc(DB.settings.activities||"")}</textarea>
+      <button class="btn gold" onclick="saveActivities()">Save activities</button>
+      <button class="btn wa" onclick="shareText('MUST 2017 activities',DB.settings.activities)">Share WhatsApp</button>
+      <label>Pay methods</label>
+      <textarea id="payEdit" rows="6">${esc(JSON.stringify(pays,null,2))}</textarea>
+      <button class="btn gold" onclick="savePays()">Save pay methods</button>
+      <label>Upload bank statement</label>
+      <input type="file" onchange="uploadBank(event)"/>
+    </div>`;
+  }
+  return memberBlocks+treas;
 }
 function openPay(id){
   ensureDocs();
@@ -1800,9 +1806,37 @@ function delExp(i){
   if(!confirm("Remove this expense?")) return;
   DB.expenses.splice(i,1); save(); render();
 }
+function usedCodes(){ return new Set((DB.members||[]).map(m=>(m.code||"").toUpperCase()).filter(Boolean)); }
+function genMemberCode(avoid){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const used=usedCodes();
+  if(avoid) used.add(String(avoid).toUpperCase());
+  for(let n=0;n<80;n++){
+    let s="";
+    for(let i=0;i<5;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+    if(!used.has(s)) return s;
+  }
+  return String(Date.now()).slice(-5);
+}
+function assignCode(m,reshuffle){
+  if(!m) return "";
+  const prev=m.code||"";
+  if(!reshuffle && prev) return prev;
+  m.code=genMemberCode(prev);
+  m.prevCode=prev||"";
+  return m.code;
+}
+function newCodeFor(id){
+  if(!needPin()) return;
+  const m=DB.members.find(x=>x.id==id); if(!m) return;
+  assignCode(m,true);
+  save();
+  alert(m.name+" new code: "+m.code);
+  render();
+}
 function shareCode(id){
   const m=DB.members.find(x=>x.id==id); if(!m) return;
-  if(!m.code){ alert("Set a login code first, then Update existing name."); return; }
+  if(!m.code) assignCode(m,false);
   if(!m.phone){ alert("No phone on file"); return; }
   const msg=`MUST Graduates 2017 Trust Fund\\nHello ${m.name}, your confidential login code is ${m.code}. Use it with your name on https://must-2017-trust-fund.vercel.app to see only your balance. Pay 10,000/month to Stanbic ${BANK}.`;
   window.open(wa(m.phone,msg),"_blank");
