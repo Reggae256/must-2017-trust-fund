@@ -151,6 +151,11 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 
 .exp-grid{display:grid;grid-template-columns:110px 1fr 120px 110px;gap:8px;align-items:center;padding:8px 12px}
 .exp-tick .exp-grid{border-bottom:1px solid #2a2a2a}
+.kebab{min-width:36px;font-size:1.25rem;line-height:1}
+.kebab-pop{position:absolute;z-index:50;background:var(--card);border:1px solid var(--line);border-radius:12px;min-width:160px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.kebab-pop button{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--ink);padding:8px 10px;font:inherit;cursor:pointer;border-radius:8px}
+.kebab-pop button:hover{background:#2a2a2a}
+.kebab-pop button.danger{color:var(--red)}
 
 .new-red{color:#ff4d3a;font-weight:700}
 
@@ -676,9 +681,11 @@ function memberHome(st){
         <button class="btn ghost" onclick="downloadMemberStmt(${found.m.id})">Download statement</button>
       </div>
     </div>
-    <div class="card"><h3>For you</h3>${notices.map(n=>`<p>${esc(n)}</p>`).join("")}</div>
     ${updatesBox(false)}
-    ${activitiesView(false)}`;
+    ${activitiesView(false)}
+    <div class="card"><h3>Our rules</h3>
+      <button class="btn ghost" onclick="ensureDocs();openModal('<h3>Our rules</h3><pre style=white-space:pre-wrap>'+esc((DB.settings&&DB.settings.constitution)||'Not posted')+'</pre>')">Open constitution</button>
+    </div>`;
 }
 function findMembers(q){
   q=(q||"").trim().toLowerCase();
@@ -1026,7 +1033,6 @@ function treasHome(st,collected,spent){
     <button class="btn ghost" style="margin:6px 0 10px" onclick="saveTreasurer()">Save treasurer details</button>
     <p>In (contributions + fees + first deposit 100,000) <b>${ugx(collected)}</b> · spent <b>${ugx(spent)}</b> · balance <b>${ugx(collected-spent)}</b></p>
     ${pieSvg(collected,spent,st.reduce((s,x)=>s+x.remaining,0))}
-    ${updatesBox(true)}
     <p>Each member's remaining = months from Jan 2025 to this month × 10,000 − what they have paid. The 4-month grace does <b>not</b> reduce that figure. Grace only marks entitled (green) or not entitled (red).</p>
     <p>${(DB.settings.paused)?"Contributions are <b>paused</b> from "+esc(DB.settings.pauseFrom)+". New months are not being billed.":"Fund is <b>open</b> — billing continues each month until members vote to pause."}</p>
     <div class="row">
@@ -1100,12 +1106,7 @@ function membersView(){
       <td>${ugx(x.remaining)}</td>
       <td><span class="pill ${x.code==='ok'?'ok':x.code==='wait'?'wait':x.code==='no'?'no':'offp'}">${x.label}</span></td>
       <td>
-        <button class="btn ghost" onclick="showStmt(${x.m.id})">Statement</button>
-        ${x.m.profile&&x.m.profile.submitted?`<button class="btn ghost" onclick="showFamily(${x.m.id})">Family</button>`:""}
-        <button class="btn ghost" onclick="fillEdit(${x.m.id})">Edit</button>
-        <button class="btn ghost" onclick="newCodeFor(${x.m.id})">New code</button>
-        <button class="btn wa" onclick="shareCode(${x.m.id})">Share code</button>
-        <button class="btn danger" onclick="deleteMember(${x.m.id})">Delete</button>
+        <button class="btn ghost kebab" onclick="event.stopPropagation();memberMenu(${x.m.id},this)">&#8942;</button>
       </td>
     </tr>`).join("")}</tbody></table></div>
     <div id="stmtBox"></div>`;
@@ -1127,6 +1128,24 @@ function deleteMember(id){
   if(!confirm("Delete "+m.name+" from the register? This cannot be undone unless you import a backup.")) return;
   DB.members=DB.members.filter(x=>x.id!==id);
   save(); render();
+}
+function memberMenu(id,btn){
+  document.querySelectorAll(".kebab-pop").forEach(e=>e.remove());
+  const m=DB.members.find(x=>x.id==id); if(!m) return;
+  const pop=document.createElement("div");
+  pop.className="kebab-pop";
+  pop.innerHTML=`
+    <button onclick="showStmt(${id});this.parentNode.remove()">Statement</button>
+    ${m.profile&&m.profile.submitted?`<button onclick="showFamily(${id});this.parentNode.remove()">Family</button>`:""}
+    <button onclick="fillEdit(${id});this.parentNode.remove()">Edit</button>
+    <button onclick="newCodeFor(${id});this.parentNode.remove()">New code</button>
+    <button onclick="shareCode(${id});this.parentNode.remove()">Share code</button>
+    <button class="danger" onclick="deleteMember(${id});this.parentNode.remove()">Delete</button>`;
+  const r=btn.getBoundingClientRect();
+  pop.style.top=(r.bottom+window.scrollY+4)+"px";
+  pop.style.right=(window.innerWidth-r.right)+"px";
+  document.body.appendChild(pop);
+  setTimeout(()=>document.addEventListener("click",function once(){ pop.remove(); document.removeEventListener("click",once); }),0);
 }
 function fillEdit(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
@@ -1382,7 +1401,7 @@ function chatView(isTreas){
     </div>`:""}
   <div class="card">
     <h3>Association room</h3>
-    <label>Your name</label><input id="chatFrom" value="${esc(who)}" placeholder="Full name as on the register"/>
+    ${who?`<p>Sending as <b>${esc(who)}</b></p><input type="hidden" id="chatFrom" value="${esc(who)}"/>`:`<p>Open <b>My account</b> first so your name is locked to your record.</p><input type="hidden" id="chatFrom" value=""/>`}
     <label>Send to</label>
     <select id="chatTo"><option value="Everyone">Group — everyone</option>
       ${DB.members.filter(m=>m.active).map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("")}
