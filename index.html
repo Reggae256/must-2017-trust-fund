@@ -189,6 +189,31 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
   .flyer-wrap{background:#fff;padding:0}
   .flyer{page-break-inside:avoid}
 }
+
+.live-wrap{display:flex;flex-direction:column;height:min(62vh,560px);background:#0b141a;border:1px solid #1f3b4d;border-radius:16px;overflow:hidden}
+.live-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#1f2c34;border-bottom:1px solid #2a3942}
+.live-top b{color:#e9edef;font-size:.95rem}
+.live-top small{color:#8696a0}
+.live-stream{flex:1;overflow:auto;padding:12px 10px;display:flex;flex-direction:column;gap:6px;background:#0b141a}
+.live-row{display:flex;flex-direction:column;max-width:86%}
+.live-row.me{align-self:flex-end;align-items:flex-end}
+.live-row.them{align-self:flex-start;align-items:flex-start}
+.live-b{padding:7px 10px 4px;border-radius:8px;position:relative;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.live-row.me .live-b{background:#005c4b;color:#e9edef;border-top-right-radius:2px}
+.live-row.them .live-b{background:#202c33;color:#e9edef;border-top-left-radius:2px}
+.live-who{font-size:.68rem;color:#53bdeb;font-weight:700;margin-bottom:2px}
+.live-tx{white-space:pre-wrap;word-break:break-word;font-size:.95rem;line-height:1.35}
+.live-meta{display:flex;justify-content:flex-end;gap:6px;align-items:center;margin-top:3px;font-size:.65rem;color:#8696a0}
+.live-reply{border-left:3px solid #00a884;background:rgba(0,0,0,.18);padding:4px 8px;margin:0 0 6px;border-radius:4px;font-size:.78rem;color:#d1d7db}
+.live-acts{display:flex;gap:6px;margin-top:2px;font-size:.75rem}
+.live-acts button{background:transparent;border:0;color:#8696a0;cursor:pointer;padding:2px}
+.live-reacts{margin-top:2px;font-size:.8rem}
+.live-composer{display:flex;gap:8px;align-items:flex-end;padding:8px;background:#1f2c34}
+.live-composer textarea{flex:1;min-height:42px;max-height:120px;background:#2a3942;border:0;color:#e9edef;border-radius:22px;padding:10px 14px;resize:none}
+.live-send{width:44px;height:44px;border-radius:50%;border:0;background:#00a884;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}
+.live-pin{background:#182229;color:#ffd36a;padding:6px 10px;font-size:.8rem;border-bottom:1px solid #2a3942}
+.chat-ctl label{margin-top:6px}
+
 </style>
 </head>
 <body>
@@ -240,6 +265,8 @@ function defaultSettings(){
   return {
     openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT,
     tickerText:"",
+    chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true},
+
     theme:"dark", font:"md",
     treasurer:{name:"Atuha Reggae", email:EMAIL, phone:"256777649497"},
     payMethods:[
@@ -656,13 +683,13 @@ function render(){
     if(tab==="spend") v.innerHTML=fundView(collected,spent,due);
     if(tab==="profile") v.innerHTML=profileView();
     if(tab==="note") v.innerHTML=memberNoteView();
-    if(tab==="chat") v.innerHTML=chatView(false);
+    if(tab==="chat") { v.innerHTML=chatView(false); setTimeout(()=>{const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight;},20); }
   } else {
     if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
     if(tab==="members") v.innerHTML=membersView();
     if(tab==="families") v.innerHTML=familiesView();
     if(tab==="pay") v.innerHTML=payView();
-    if(tab==="chat") v.innerHTML=chatView(true);
+    if(tab==="chat") { v.innerHTML=chatView(true); setTimeout(()=>{const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight;},20); }
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
     if(tab==="updates") v.innerHTML=treasUpdatesView();
     if(tab==="flyer") v.innerHTML=flyerView(st);
@@ -1658,6 +1685,7 @@ function chatView(isTreas){
       ${isTreas?`<button class="btn ghost" onclick="downloadChatSummary()">Download chat summary</button>`:""}
     </div>
   </div>
+  ${liveChatBlock(isTreas)}
   <div class="card chatlog">${visibleChat(isTreas).slice().reverse().map(c=>`
     <div class="bubble ${c.role==='system'||c.private?'official':''}">
       <div class="tag">${esc(c.to||"Everyone")} · ${c.private||tagMsg(c.text)==="benefit"?"confidential":tagMsg(c.text)}</div>
@@ -1666,6 +1694,196 @@ function chatView(isTreas){
       <div>${esc(c.text)}</div>
     </div>`).join("")}</div>`;
 }
+
+function chatCtl(){
+  ensureDocs();
+  return Object.assign({on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true}, DB.settings.chatCtl||{});
+}
+function pruneLive(){
+  ensureDocs();
+  const c=chatCtl();
+  const ttl=Number(c.ttlHours||0);
+  if(!ttl || ttl<=0) return;
+  const cut=Date.now()-ttl*3600000;
+  const keep=(DB.live||[]).filter(m=>{
+    if(m.pinned) return true;
+    const at=Date.parse(m.at||0)||0;
+    return at>=cut;
+  });
+  if(keep.length!==(DB.live||[]).length){ DB.live=keep; save(); }
+}
+function liveMe(){
+  return mode==="treasurer"?treasurerDisplayName():(who||"");
+}
+function canPostLive(){
+  const c=chatCtl();
+  if(!c.on) return false;
+  const me=liveMe();
+  if(!me) return false;
+  if(mode==="treasurer") return true;
+  if(c.who==="treasurer") return false;
+  if(c.who==="exec") return isExecutive(me);
+  return !!who;
+}
+function liveChatBlock(isTreas){
+  ensureDocs(); pruneLive();
+  const c=chatCtl();
+  const me=liveMe();
+  const list=(DB.live||[]).slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));
+  const pinned=list.filter(m=>m.pinned).slice(-1)[0];
+  const rows=list.map(m=>{
+    const mine=me && (m.from||"").toLowerCase()===me.toLowerCase();
+    const reply=m.replyTo? (DB.live||[]).find(x=>x.id===m.replyTo):null;
+    const reacts=Object.entries(m.reactions||{}).filter(([,n])=>n&&n.length).map(([e,n])=>e+" "+n.length).join(" ");
+    return `<div class="live-row ${mine?"me":"them"}" id="lv-${m.id}">
+      <div class="live-b">
+        ${mine?"":`<div class="live-who">${esc(m.from)}</div>`}
+        ${reply?`<div class="live-reply">${esc(reply.from)}: ${esc((reply.text||"").slice(0,80))}</div>`:""}
+        <div class="live-tx">${esc(m.text)}</div>
+        <div class="live-meta">${new Date(m.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${m.pinned?" · pinned":""}</div>
+      </div>
+      ${reacts?`<div class="live-reacts">${esc(reacts)}</div>`:""}
+      <div class="live-acts">
+        ${c.reply && me?`<button type="button" onclick="setLiveReply('${m.id}')">Reply</button>`:""}
+        ${c.react && me?`<button type="button" onclick="reactLive('${m.id}','👍')">👍</button><button type="button" onclick="reactLive('${m.id}','❤️')">❤️</button>`:""}
+        ${isTreas?`<button type="button" onclick="pinLive('${m.id}')">Pin</button><button type="button" onclick="delLive('${m.id}')">Delete</button>`:""}
+        ${!isTreas && c.deleteOwn && mine?`<button type="button" onclick="delLive('${m.id}')">Delete</button>`:""}
+      </div>
+    </div>`;
+  }).join("") || `<p style="color:#8696a0;text-align:center;margin:auto">No live messages yet.</p>`;
+  const locked=!canPostLive();
+  const ttlLab=c.ttlHours<=0?"kept":(c.ttlHours<24?c.ttlHours+"h":(c.ttlHours/24)+"d");
+  return `${isTreas?liveCtlCard():""}
+  <div class="card" style="padding:10px">
+    <h3>Live chat</h3>
+    <div class="live-wrap">
+      <div class="live-top">
+        <div><b>MUST 2017 room</b><br><small>${c.on?"Live":"Paused by treasurer"} · messages last ${ttlLab}</small></div>
+        <small id="liveTyping">${c.showTyping?esc(typingLine()):""}</small>
+      </div>
+      ${pinned?`<div class="live-pin">📌 ${esc(pinned.from)}: ${esc((pinned.text||"").slice(0,90))}</div>`:""}
+      <div class="live-stream" id="liveStream">${rows}</div>
+      <div class="live-composer">
+        <textarea id="liveText" rows="1" ${locked?"disabled":""} placeholder="${locked?(me?"Sending is limited by the treasurer":"Sign in first"):"Message"}" oninput="noteTyping()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();postLive();}"></textarea>
+        <button class="live-send" ${locked?"disabled":""} onclick="postLive()">➤</button>
+      </div>
+    </div>
+    <p id="liveReplyBar" style="display:none;color:var(--gold);font-size:.85rem;margin:8px 0 0"></p>
+  </div>`;
+}
+function liveCtlCard(){
+  const c=chatCtl();
+  return `<div class="card chat-ctl">
+    <h3>Live chat controls</h3>
+    <p>These apply to the WhatsApp-style room only, not Association room notices.</p>
+    <label><input type="checkbox" id="ccOn" ${c.on?"checked":""}/> Room is open</label>
+    <label>Messages last</label>
+    <select id="ccTtl">
+      <option value="1" ${c.ttlHours==1?"selected":""}>1 hour</option>
+      <option value="6" ${c.ttlHours==6?"selected":""}>6 hours</option>
+      <option value="24" ${c.ttlHours==24?"selected":""}>24 hours</option>
+      <option value="168" ${Number(c.ttlHours)===168?"selected":""}>7 days</option>
+      <option value="720" ${c.ttlHours==720?"selected":""}>30 days</option>
+      <option value="0" ${Number(c.ttlHours)===0?"selected":""}>Keep forever</option>
+    </select>
+    <label>Who can send</label>
+    <select id="ccWho">
+      <option value="members" ${c.who==="members"?"selected":""}>Registered members</option>
+      <option value="exec" ${c.who==="exec"?"selected":""}>Executives only</option>
+      <option value="treasurer" ${c.who==="treasurer"?"selected":""}>Treasurer only</option>
+    </select>
+    <label>Max characters</label><input id="ccLen" type="number" min="40" max="2000" value="${c.maxLen||500}"/>
+    <label>Slow mode (seconds between sends)</label><input id="ccSlow" type="number" min="0" max="300" value="${c.slowSec||0}"/>
+    <label><input type="checkbox" id="ccReact" ${c.react?"checked":""}/> Reactions</label>
+    <label><input type="checkbox" id="ccReply" ${c.reply?"checked":""}/> Replies</label>
+    <label><input type="checkbox" id="ccDel" ${c.deleteOwn?"checked":""}/> Members may delete own messages</label>
+    <label><input type="checkbox" id="ccType" ${c.showTyping?"checked":""}/> Show typing</label>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="saveChatCtl()">Save chat rules</button>
+      <button class="btn danger" onclick="clearLive()">Clear live room</button>
+    </div>
+  </div>`;
+}
+function saveChatCtl(){
+  if(!needPin()) return;
+  ensureDocs();
+  DB.settings.chatCtl={
+    on:!!document.getElementById("ccOn").checked,
+    ttlHours:Number(document.getElementById("ccTtl").value||168),
+    who:document.getElementById("ccWho").value||"members",
+    maxLen:Math.max(40, Number(document.getElementById("ccLen").value||500)),
+    slowSec:Math.max(0, Number(document.getElementById("ccSlow").value||0)),
+    react:!!document.getElementById("ccReact").checked,
+    reply:!!document.getElementById("ccReply").checked,
+    deleteOwn:!!document.getElementById("ccDel").checked,
+    showTyping:!!document.getElementById("ccType").checked
+  };
+  save(); alert("Live chat rules saved"); render();
+}
+function postLive(){
+  const c=chatCtl();
+  if(!canPostLive()){ alert("The treasurer has limited who can send."); return; }
+  const text=((document.getElementById("liveText")||{}).value||"").trim();
+  if(!text) return;
+  if(text.length>(c.maxLen||500)){ alert("Keep the message under "+c.maxLen+" characters"); return; }
+  const now=Date.now();
+  if(c.slowSec && window._lastLive && now-window._lastLive<c.slowSec*1000){
+    alert("Slow mode: wait "+c.slowSec+" seconds"); return;
+  }
+  window._lastLive=now;
+  DB.live=DB.live||[];
+  DB.live.push({
+    id:"l"+now.toString(36)+Math.random().toString(36).slice(2,5),
+    from:liveMe(),
+    text,
+    at:new Date().toISOString(),
+    replyTo:window._liveReply||"",
+    reactions:{},
+    pinned:false
+  });
+  window._liveReply=""; window._typingTo=""; window._typingAt=0;
+  save();
+  render();
+  setTimeout(()=>{ const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight; },30);
+}
+function setLiveReply(id){
+  const m=(DB.live||[]).find(x=>x.id===id);
+  window._liveReply=id;
+  const bar=document.getElementById("liveReplyBar");
+  if(bar){ bar.style.display="block"; bar.textContent="Replying to "+(m?m.from:"")+" — tap Send"; }
+  const box=document.getElementById("liveText"); if(box) box.focus();
+}
+function reactLive(id,emo){
+  if(!chatCtl().react) return;
+  const me=liveMe(); if(!me) return;
+  const m=(DB.live||[]).find(x=>x.id===id); if(!m) return;
+  m.reactions=m.reactions||{};
+  m.reactions[emo]=m.reactions[emo]||[];
+  const i=m.reactions[emo].indexOf(me);
+  if(i>=0) m.reactions[emo].splice(i,1); else m.reactions[emo].push(me);
+  save(); render();
+}
+function pinLive(id){
+  if(mode!=="treasurer") return;
+  if(!needPin()) return;
+  (DB.live||[]).forEach(m=>m.pinned=(m.id===id?!m.pinned:false));
+  save(); render();
+}
+function delLive(id){
+  const m=(DB.live||[]).find(x=>x.id===id); if(!m) return;
+  const me=liveMe();
+  const own=me && (m.from||"").toLowerCase()===me.toLowerCase();
+  if(mode!=="treasurer" && !(chatCtl().deleteOwn && own)) return;
+  if(mode==="treasurer" && !needPin()) return;
+  DB.live=(DB.live||[]).filter(x=>x.id!==id);
+  save(); render();
+}
+function clearLive(){
+  if(!needPin()) return;
+  if(!confirm("Clear all live chat messages?")) return;
+  DB.live=[]; save(); render();
+}
+
 function summarizeChat(){
   const human=DB.chat.filter(c=>c.role!=="system");
   const bags={payment:0,benefit:0,complaint:0,social:0};
@@ -1785,7 +2003,32 @@ function printFlyer(){
     td:last-child,th:last-child{width:78px;text-align:right}
     .bar{background:#111;color:#f5c400;text-align:center;padding:6px;margin-top:6px;font-weight:800;font-size:13px}
     .legend-box{background:#fff;color:#111;padding:6px 8px;margin-top:6px;font-size:11px;font-weight:700}
-  </style></head><body>${node.outerHTML}
+  
+.live-wrap{display:flex;flex-direction:column;height:min(62vh,560px);background:#0b141a;border:1px solid #1f3b4d;border-radius:16px;overflow:hidden}
+.live-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#1f2c34;border-bottom:1px solid #2a3942}
+.live-top b{color:#e9edef;font-size:.95rem}
+.live-top small{color:#8696a0}
+.live-stream{flex:1;overflow:auto;padding:12px 10px;display:flex;flex-direction:column;gap:6px;background:#0b141a}
+.live-row{display:flex;flex-direction:column;max-width:86%}
+.live-row.me{align-self:flex-end;align-items:flex-end}
+.live-row.them{align-self:flex-start;align-items:flex-start}
+.live-b{padding:7px 10px 4px;border-radius:8px;position:relative;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.live-row.me .live-b{background:#005c4b;color:#e9edef;border-top-right-radius:2px}
+.live-row.them .live-b{background:#202c33;color:#e9edef;border-top-left-radius:2px}
+.live-who{font-size:.68rem;color:#53bdeb;font-weight:700;margin-bottom:2px}
+.live-tx{white-space:pre-wrap;word-break:break-word;font-size:.95rem;line-height:1.35}
+.live-meta{display:flex;justify-content:flex-end;gap:6px;align-items:center;margin-top:3px;font-size:.65rem;color:#8696a0}
+.live-reply{border-left:3px solid #00a884;background:rgba(0,0,0,.18);padding:4px 8px;margin:0 0 6px;border-radius:4px;font-size:.78rem;color:#d1d7db}
+.live-acts{display:flex;gap:6px;margin-top:2px;font-size:.75rem}
+.live-acts button{background:transparent;border:0;color:#8696a0;cursor:pointer;padding:2px}
+.live-reacts{margin-top:2px;font-size:.8rem}
+.live-composer{display:flex;gap:8px;align-items:flex-end;padding:8px;background:#1f2c34}
+.live-composer textarea{flex:1;min-height:42px;max-height:120px;background:#2a3942;border:0;color:#e9edef;border-radius:22px;padding:10px 14px;resize:none}
+.live-send{width:44px;height:44px;border-radius:50%;border:0;background:#00a884;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}
+.live-pin{background:#182229;color:#ffd36a;padding:6px 10px;font-size:.8rem;border-bottom:1px solid #2a3942}
+.chat-ctl label{margin-top:6px}
+
+</style></head><body>${node.outerHTML}
   <script>window.onload=function(){window.focus();window.print();};<\/script>
   </body></html>`);
   w.document.close();
@@ -2033,6 +2276,8 @@ function ensureDocs(){
   if(DB.settings.constitution==null) DB.settings.constitution=defaultSettings().constitution;
   if(DB.settings.activities==null) DB.settings.activities="";
   if(!DB.settings.bankFiles) DB.settings.bankFiles=[];
+  if(!DB.settings.chatCtl) DB.settings.chatCtl={on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true};
+  if(!DB.live) DB.live=[];
 }
 
 function treasUpdatesView(){
