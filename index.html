@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -241,7 +242,7 @@ function load(){
 let DB=load();
 const MUST_FIREBASE={apiKey:"AIzaSyBJqm0uCUciJuySBxqScl9vRgtoIvJOW00",authDomain:"must-2017-trust.firebaseapp.com",projectId:"must-2017-trust",storageBucket:"must-2017-trust.firebasestorage.app",messagingSenderId:"933027548846",appId:"1:933027548846:web:fab72bcc6dec4370afe73f"}; /* public web config — security is Firestore rules */
 const FBKEY="must2017trust.fb";
-let FB={db:null,unsub:null,pushing:false,skip:false,ok:false,err:"",at:0};
+let FB={db:null,auth:null,user:null,unsub:null,pushing:false,skip:false,ok:false,err:"",at:0};
 function loadFbCfg(){
   try{
     const local=JSON.parse(localStorage.getItem(FBKEY)||"null");
@@ -265,6 +266,13 @@ function initFirebase(){
   try{
     if(!firebase.apps.length) firebase.initializeApp(cfg);
     FB.db=firebase.firestore();
+    try{ FB.auth=firebase.auth(); }catch(e){ FB.auth=null; }
+    if(FB.auth){
+      FB.auth.onAuthStateChanged(u=>{
+        FB.user=u||null;
+        if(typeof render==="function") try{ render(); }catch(err){}
+      });
+    }
     FB.ok=true;
     listenCloud();
   }catch(e){ FB.err=String(e.message||e); }
@@ -297,6 +305,7 @@ function listenCloud(){
 }
 function pushCloud(){
   if(!FB.db || FB.skip) return;
+  if(!FB.user){ FB.err="sign-in"; return; }
   DB.updatedAt=Date.now();
   FB.pushing=true;
   FB.db.collection("ledger").doc("main").set({
@@ -311,10 +320,31 @@ function save(){
   save._t=setTimeout(pushCloud, 500);
 }
 function cloudLabel(){
-  if(FB.ok) return "Live book — this device is linked. Other phones with the same link see new entries in a few seconds.";
-  if(FB.err==="not-linked") return "This phone only. Link Firebase on Treasurer → Backup to sync every device.";
+  if(!FB.ok && FB.err==="not-linked") return "This phone only. Cloud keys are missing.";
   if(FB.err==="sdk") return "Cloud tools did not load. Check internet and refresh.";
+  if(FB.ok && FB.user) return "Live book as "+(FB.user.email||"treasurer")+". Other phones read this book. Only a signed-in treasurer can change it.";
+  if(FB.ok) return "Live book is readable on this phone. Sign in with Google (Backup) to publish changes.";
   return FB.err ? ("Cloud error: "+FB.err) : "This phone only.";
+}
+function googleSignIn(){
+  if(!FB.auth){ alert("Refresh the page, then try again."); return; }
+  const provider=new firebase.auth.GoogleAuthProvider();
+  FB.auth.signInWithPopup(provider).then(res=>{
+    FB.user=res.user;
+    pushCloud();
+    alert("Signed in as "+(FB.user.email||"treasurer")+". This phone can now publish to the live book.");
+    render();
+  }).catch(e=>{
+    const m=e.code||e.message||String(e);
+    if(String(m).indexOf("auth/operation-not-allowed")>=0)
+      alert("Enable Google sign-in in Firebase: Authentication → Sign-in method → Google → Enable. Add authorized domain must-2017-trust-fund.vercel.app");
+    else if(String(m).indexOf("auth/unauthorized-domain")>=0)
+      alert("In Firebase Authentication → Settings → Authorized domains, add must-2017-trust-fund.vercel.app and localhost");
+    else alert("Sign-in failed: "+m);
+  });
+}
+function googleSignOut(){
+  if(FB.auth) FB.auth.signOut().then(()=>{ FB.user=null; render(); });
 }
 function connectCloud(){
   let raw=(document.getElementById("fbCfg")||{}).value||"";
@@ -1425,7 +1455,11 @@ function backupView(){
   return `<div class="card">
     <h3>Live sync (all phones)</h3>
     <p>${cloudLabel()}</p>
-    <p>One-time setup (free): open <b>https://console.firebase.google.com</b> → Add project → name it <b>must-2017-trust</b> → Build → Firestore Database → Create database → Start in <b>test mode</b> (rules allow read/write for 30 days; we can lock later). Then Project settings → Your apps → Web app → copy the <b>firebaseConfig</b> object and paste it below.</p>
+    <p>Firebase project <b>must-2017-trust</b> is linked. Members can read the live book. To publish payments from this phone, sign in with the treasurer Google account.</p>
+    <div class="row">
+      ${FB.user?`<button class="btn ghost" onclick="googleSignOut()">Sign out ${esc(FB.user.email||"")}</button>`:`<button class="btn gold" onclick="googleSignIn()">Sign in with Google to publish</button>`}
+    </div>
+    <p style="font-size:.85rem;color:var(--muted)">One-time in Firebase: Authentication → Sign-in method → Google → Enable. Settings → Authorized domains → add <b>must-2017-trust-fund.vercel.app</b>. Firestore rules: read public, write only if signed in.</p>
     <textarea id="fbCfg" rows="8" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'>${esc(cfg.apiKey?JSON.stringify(cfg,null,2):"")}</textarea>
     <div class="row">
       <button class="btn gold" onclick="connectCloud()">Link this site to the live book</button>
