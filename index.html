@@ -149,6 +149,10 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .live-n{margin-left:8px;font-size:.9rem;color:var(--ink);vertical-align:middle;font-weight:700}
 .name-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;max-height:280px;overflow:auto}
 .name-pick{font-size:.85rem}
+.name-hints{margin-top:8px;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#0f0f0f}
+.name-hints:empty{display:none}
+.name-hint{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #2a2a2a;color:var(--ink);padding:12px 14px;font:inherit;cursor:pointer}
+.name-hint:last-child{border-bottom:0}
 .exp-head{background:#111;color:#f5d15a;font-weight:700;padding:8px 12px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;letter-spacing:.04em;text-transform:uppercase;font-size:.75rem}
 .exp-tick{border-radius:0 0 10px 10px;height:180px}
 .exp-row{padding:8px 12px;border-bottom:1px solid #2a2a2a;font-size:.9rem}
@@ -659,8 +663,8 @@ function memberHome(st){
   const names=DB.members.map(m=>`<option value="${esc(m.name)}">`).join("");
   if(!found){
     return `<div class="card"><h3>Sign in to your account</h3>
-      <input list="nm" id="whoBox" autocomplete="on" placeholder="Name, phone ending, or code"/>
-      <datalist id="nm">${names}</datalist>
+      <input id="whoBox" autocomplete="off" inputmode="text" placeholder="Type your name, phone ending, or code" oninput="filterSignNames()" onfocus="filterSignNames()"/>
+      <div id="nameHints" class="name-hints"></div>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" onclick="openMyStatus()">Open my status</button>
       </div>
@@ -712,6 +716,32 @@ function findMembers(q){
   });
 }
 function pickMember(id){ const m=DB.members.find(x=>x.id==id); if(!m) return; who=m.name; closeModal(); render(); }
+
+function filterSignNames(){
+  const box=document.getElementById("whoBox");
+  const out=document.getElementById("nameHints");
+  if(!box||!out) return;
+  const q=(box.value||"").trim().toLowerCase();
+  const digits=q.replace(/\D/g,"");
+  if(q.length<1){ out.innerHTML=""; return; }
+  const hits=DB.members.filter(m=>{
+    const n=(m.name||"").toLowerCase();
+    if(n.indexOf(q)>=0) return true;
+    const ph=String(m.phone||"").replace(/\D/g,"");
+    if(digits.length>=3 && ph.indexOf(digits)>=0) return true;
+    if((m.code||"").toLowerCase().indexOf(q)>=0) return true;
+    return false;
+  }).slice(0,12);
+  out.innerHTML=hits.map(m=>`<button type="button" class="name-hint" onclick="pickSignName(${JSON.stringify(m.name)})">${esc(m.name)}</button>`).join("");
+}
+function pickSignName(name){
+  const box=document.getElementById("whoBox");
+  if(box) box.value=name;
+  const out=document.getElementById("nameHints");
+  if(out) out.innerHTML="";
+  who=name; render();
+}
+
 function openMyStatus(){
   const name=(document.getElementById("whoBox").value||"").trim();
   if(!name){ alert("Type your name, phone ending, or member code"); return; }
