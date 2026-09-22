@@ -213,6 +213,17 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .live-send{width:44px;height:44px;border-radius:50%;border:0;background:#00a884;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}
 .live-pin{background:#182229;color:#ffd36a;padding:6px 10px;font-size:.8rem;border-bottom:1px solid #2a3942}
 .chat-ctl label{margin-top:6px}
+.live-tools{display:flex;gap:4px;padding:0 8px 6px;background:#1f2c34}
+.live-tools button,.live-tools label.tool{background:#2a3942;border:0;color:#e9edef;border-radius:50%;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:1.05rem}
+.live-media img,.live-media video{max-width:220px;border-radius:8px;display:block}
+.live-media audio{width:210px}
+.live-dl{color:#53bdeb;font-size:.78rem}
+.rec-on{background:#e11d48!important}
+.ticks{font-size:.8rem;letter-spacing:-1px;line-height:1;margin-left:4px}
+.ticks.one,.ticks.two{color:#8696a0}
+.ticks.blue{color:#53bdeb}
+
+
 
 </style>
 </head>
@@ -265,7 +276,7 @@ function defaultSettings(){
   return {
     openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT,
     tickerText:"",
-    chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true},
+    chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true},
 
     theme:"dark", font:"md",
     treasurer:{name:"Atuha Reggae", email:EMAIL, phone:"256777649497"},
@@ -395,7 +406,13 @@ function pushCloud(){
     db: cloudPayload(),
     updatedAt: DB.updatedAt,
     note:"MUST 2017 trust fund"
-  }).then(()=>{ FB.at=DB.updatedAt; FB.err=""; }).catch(e=>{ FB.err=e.message||String(e); }).finally(()=>{ FB.pushing=false; });
+  }).then(()=>{ FB.at=DB.updatedAt; FB.err="";
+      let ch=false;
+      (DB.live||[]).forEach(m=>{
+        if(m.status==="sent" || !m.status){ m.status="delivered"; ch=true; }
+      });
+      if(ch) try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+    }).catch(e=>{ FB.err=e.message||String(e); }).finally(()=>{ FB.pushing=false; });
 }
 function save(){
   localStorage.setItem(KEY, JSON.stringify(DB));
@@ -683,13 +700,13 @@ function render(){
     if(tab==="spend") v.innerHTML=fundView(collected,spent,due);
     if(tab==="profile") v.innerHTML=profileView();
     if(tab==="note") v.innerHTML=memberNoteView();
-    if(tab==="chat") { v.innerHTML=chatView(false); setTimeout(()=>{const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight;},20); }
+    if(tab==="chat") { markLiveSeen(); v.innerHTML=chatView(false); setTimeout(()=>{const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight;},20); }
   } else {
     if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
     if(tab==="members") v.innerHTML=membersView();
     if(tab==="families") v.innerHTML=familiesView();
     if(tab==="pay") v.innerHTML=payView();
-    if(tab==="chat") { v.innerHTML=chatView(true); setTimeout(()=>{const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight;},20); }
+    if(tab==="chat") { markLiveSeen(); v.innerHTML=chatView(true); setTimeout(()=>{const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight;},20); }
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
     if(tab==="updates") v.innerHTML=treasUpdatesView();
     if(tab==="flyer") v.innerHTML=flyerView(st);
@@ -1697,7 +1714,7 @@ function chatView(isTreas){
 
 function chatCtl(){
   ensureDocs();
-  return Object.assign({on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true}, DB.settings.chatCtl||{});
+  return Object.assign({on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true}, DB.settings.chatCtl||{});
 }
 function pruneLive(){
   ensureDocs();
@@ -1739,8 +1756,9 @@ function liveChatBlock(isTreas){
       <div class="live-b">
         ${mine?"":`<div class="live-who">${esc(m.from)}</div>`}
         ${reply?`<div class="live-reply">${esc(reply.from)}: ${esc((reply.text||"").slice(0,80))}</div>`:""}
-        <div class="live-tx">${esc(m.text)}</div>
-        <div class="live-meta">${new Date(m.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${m.pinned?" · pinned":""}</div>
+        <div class="live-tx">${esc(m.text||"")}</div>
+        ${liveMediaHtml(m)}
+        <div class="live-meta">${new Date(m.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}${m.pinned?" · pinned":""}${m.kind&&m.kind!=="text"?" · "+m.kind:""}${mine?liveTicks(m):""}</div>
       </div>
       ${reacts?`<div class="live-reacts">${esc(reacts)}</div>`:""}
       <div class="live-acts">
@@ -1763,6 +1781,13 @@ function liveChatBlock(isTreas){
       </div>
       ${pinned?`<div class="live-pin">📌 ${esc(pinned.from)}: ${esc((pinned.text||"").slice(0,90))}</div>`:""}
       <div class="live-stream" id="liveStream">${rows}</div>
+      ${!locked?`<div class="live-tools">
+        ${c.allowCamera?`<label class="tool" title="Take photo">📷<input type="file" accept="image/*" capture="environment" hidden onchange="livePickFile(event,'photo')"/></label>`:""}
+        ${c.allowPhoto?`<label class="tool" title="Photo from gallery">🖼️<input type="file" accept="image/*" hidden onchange="livePickFile(event,'photo')"/></label>`:""}
+        ${c.allowVideo?`<label class="tool" title="Video">🎥<input type="file" accept="video/*" capture="environment" hidden onchange="livePickFile(event,'video')"/></label>`:""}
+        ${c.allowFile?`<label class="tool" title="File">📎<input type="file" hidden onchange="livePickFile(event,'file')"/></label>`:""}
+        ${c.allowAudio?`<button type="button" id="liveMic" class="tool" title="Voice note" onclick="toggleLiveMic()">🎤</button>`:""}
+      </div>`:""}
       <div class="live-composer">
         <textarea id="liveText" rows="1" ${locked?"disabled":""} placeholder="${locked?(me?"Sending is limited by the treasurer":"Sign in first"):"Message"}" oninput="noteTyping()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();postLive();}"></textarea>
         <button class="live-send" ${locked?"disabled":""} onclick="postLive()">➤</button>
@@ -1798,6 +1823,15 @@ function liveCtlCard(){
     <label><input type="checkbox" id="ccReply" ${c.reply?"checked":""}/> Replies</label>
     <label><input type="checkbox" id="ccDel" ${c.deleteOwn?"checked":""}/> Members may delete own messages</label>
     <label><input type="checkbox" id="ccType" ${c.showTyping?"checked":""}/> Show typing</label>
+    <label><input type="checkbox" id="ccRec" ${c.receipts?"checked":""}/> Ticks (sent / delivered / seen)</label>
+    <h3 style="margin-top:14px">Media in the live room</h3>
+    <label><input type="checkbox" id="ccPhoto" ${c.allowPhoto?"checked":""}/> Upload photos</label>
+    <label><input type="checkbox" id="ccCam" ${c.allowCamera?"checked":""}/> Take photo with camera</label>
+    <label><input type="checkbox" id="ccVid" ${c.allowVideo?"checked":""}/> Capture / upload video</label>
+    <label><input type="checkbox" id="ccAud" ${c.allowAudio?"checked":""}/> Record voice notes</label>
+    <label><input type="checkbox" id="ccFile" ${c.allowFile?"checked":""}/> Attach files</label>
+    <label>Max size per item (KB)</label><input id="ccKb" type="number" min="50" max="800" value="${c.maxMediaKb||250}"/>
+    <p style="font-size:.8rem;color:var(--muted)">Keep this modest so all phones can still sync the live book.</p>
     <div class="row" style="margin-top:10px">
       <button class="btn gold" onclick="saveChatCtl()">Save chat rules</button>
       <button class="btn danger" onclick="clearLive()">Clear live room</button>
@@ -1816,36 +1850,155 @@ function saveChatCtl(){
     react:!!document.getElementById("ccReact").checked,
     reply:!!document.getElementById("ccReply").checked,
     deleteOwn:!!document.getElementById("ccDel").checked,
-    showTyping:!!document.getElementById("ccType").checked
+    showTyping:!!document.getElementById("ccType").checked,
+    receipts:!!document.getElementById("ccRec").checked,
+    allowPhoto:!!document.getElementById("ccPhoto").checked,
+    allowCamera:!!document.getElementById("ccCam").checked,
+    allowVideo:!!document.getElementById("ccVid").checked,
+    allowAudio:!!document.getElementById("ccAud").checked,
+    allowFile:!!document.getElementById("ccFile").checked,
+    maxMediaKb:Math.max(50, Math.min(800, Number(document.getElementById("ccKb").value||250)))
   };
   save(); alert("Live chat rules saved"); render();
 }
-function postLive(){
+function postLive(){ pushLiveMsg({kind:"text"}); }
+
+
+function liveTicks(m){
+  if(!chatCtl().receipts) return "";
+  const others=(m.seenBy||[]).filter(n=>n && n.toLowerCase()!==String(m.from||"").toLowerCase());
+  if(others.length){
+    const title=others.length===1?("Seen by "+others[0]):("Seen by "+others.length+" members");
+    return `<span class="ticks blue" title="${esc(title)}">✓✓</span>`;
+  }
+  if(m.status==="delivered" || (FB.at && FB.at>=Date.parse(m.at||0)))
+    return `<span class="ticks two" title="Delivered">✓✓</span>`;
+  return `<span class="ticks one" title="Sent">✓</span>`;
+}
+function markLiveSeen(){
+  const me=liveMe();
+  if(!me || !chatCtl().receipts) return;
+  let changed=false;
+  (DB.live||[]).forEach(m=>{
+    if((m.from||"").toLowerCase()===me.toLowerCase()) return;
+    m.seenBy=m.seenBy||[];
+    if(!m.seenBy.some(n=>n.toLowerCase()===me.toLowerCase())){
+      m.seenBy.push(me); changed=true;
+    }
+    if(m.status!=="seen") m.status="delivered";
+  });
+  if(changed) save();
+}
+
+function liveMediaHtml(m){
+  if(!m || !m.data) return "";
+  const name=esc(m.fileName||"attachment");
+  const dl=`<a class="live-dl" href="${m.data}" download="${name}">Download</a>`;
+  if(m.kind==="photo" || (m.mime||"").indexOf("image/")===0)
+    return `<div class="live-media"><img src="${m.data}" alt="${name}"/><div>${dl}</div></div>`;
+  if(m.kind==="audio" || (m.mime||"").indexOf("audio/")===0)
+    return `<div class="live-media"><audio controls src="${m.data}"></audio><div>${dl}</div></div>`;
+  if(m.kind==="video" || (m.mime||"").indexOf("video/")===0)
+    return `<div class="live-media"><video controls src="${m.data}"></video><div>${dl}</div></div>`;
+  return `<div class="live-media">📄 ${name} · ${dl}</div>`;
+}
+function liveCap(){
+  return Math.max(50, Number(chatCtl().maxMediaKb||250))*1024;
+}
+function pushLiveMsg(extra){
   const c=chatCtl();
   if(!canPostLive()){ alert("The treasurer has limited who can send."); return; }
-  const text=((document.getElementById("liveText")||{}).value||"").trim();
-  if(!text) return;
-  if(text.length>(c.maxLen||500)){ alert("Keep the message under "+c.maxLen+" characters"); return; }
   const now=Date.now();
   if(c.slowSec && window._lastLive && now-window._lastLive<c.slowSec*1000){
     alert("Slow mode: wait "+c.slowSec+" seconds"); return;
   }
   window._lastLive=now;
-  DB.live=DB.live||[];
-  DB.live.push({
+  const text=((document.getElementById("liveText")||{}).value||"").trim();
+  const rec=Object.assign({
     id:"l"+now.toString(36)+Math.random().toString(36).slice(2,5),
     from:liveMe(),
-    text,
+    text:text,
     at:new Date().toISOString(),
     replyTo:window._liveReply||"",
     reactions:{},
-    pinned:false
-  });
+    pinned:false,
+    kind:"text", status:"sent", seenBy:[]
+  }, extra||{});
+  if(!rec.text && !rec.data){ alert("Write a message or attach something"); return; }
+  if(rec.text && rec.text.length>(c.maxLen||500)){ alert("Keep the message under "+c.maxLen+" characters"); return; }
+  DB.live=DB.live||[];
+  DB.live.push(rec);
+  const box=document.getElementById("liveText"); if(box) box.value="";
   window._liveReply=""; window._typingTo=""; window._typingAt=0;
-  save();
-  render();
+  save(); render();
   setTimeout(()=>{ const s=document.getElementById("liveStream"); if(s) s.scrollTop=s.scrollHeight; },30);
 }
+function livePickFile(ev,kind){
+  const f=ev.target.files && ev.target.files[0];
+  ev.target.value="";
+  if(!f) return;
+  const c=chatCtl();
+  if(kind==="photo" && !(c.allowPhoto||c.allowCamera)) return;
+  if(kind==="video" && !c.allowVideo) return;
+  if(kind==="file" && !c.allowFile) return;
+  const cap=liveCap();
+  if(kind==="photo" || (f.type||"").indexOf("image/")===0){
+    compressLiveImage(f, cap).then(data=>pushLiveMsg({kind:"photo", data, mime:"image/jpeg", fileName:f.name||"photo.jpg"})).catch(e=>alert(e.message||e));
+    return;
+  }
+  if(f.size>cap){ alert("That file is larger than "+Math.round(cap/1024)+" KB. Treasurer limit."); return; }
+  const r=new FileReader();
+  r.onload=()=>pushLiveMsg({kind:kind==="video"||(f.type||"").indexOf("video/")===0?"video":"file", data:r.result, mime:f.type||"application/octet-stream", fileName:f.name||"file"});
+  r.readAsDataURL(f);
+}
+function compressLiveImage(file, cap){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let w=img.width, h=img.height, max=960;
+      if(w>max || h>max){ const s=max/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+      const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+      cv.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      let q=0.72, data=cv.toDataURL("image/jpeg",q);
+      while(data.length>cap*1.37 && q>0.35){ q-=0.08; data=cv.toDataURL("image/jpeg",q); }
+      if(data.length>cap*1.37) reject(new Error("Photo is still too large after compress. Lower the treasurer KB limit only if needed."));
+      else resolve(data);
+    };
+    img.onerror=()=>reject(new Error("Could not read photo"));
+    img.src=url;
+  });
+}
+function toggleLiveMic(){
+  const c=chatCtl();
+  if(!c.allowAudio) return;
+  if(window._micRec){ stopLiveMic(); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ alert("This phone cannot record audio here"); return; }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    const rec=new MediaRecorder(stream);
+    const chunks=[];
+    rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+    rec.onstop=()=>{
+      stream.getTracks().forEach(tr=>tr.stop());
+      const blob=new Blob(chunks,{type:rec.mimeType||"audio/webm"});
+      if(blob.size>liveCap()){ alert("Voice note is over the treasurer size limit"); return; }
+      const r=new FileReader();
+      r.onload=()=>pushLiveMsg({kind:"audio", data:r.result, mime:blob.type, fileName:"voice-note.webm"});
+      r.readAsDataURL(blob);
+    };
+    window._micRec=rec; rec.start();
+    const btn=document.getElementById("liveMic"); if(btn){ btn.classList.add("rec-on"); btn.textContent="■"; }
+    window._micT=setTimeout(stopLiveMic, 45000);
+  }).catch(()=>alert("Allow the microphone to send a voice note"));
+}
+function stopLiveMic(){
+  try{ if(window._micT) clearTimeout(window._micT); }catch(e){}
+  const rec=window._micRec; window._micRec=null;
+  const btn=document.getElementById("liveMic"); if(btn){ btn.classList.remove("rec-on"); btn.textContent="🎤"; }
+  if(rec && rec.state!=="inactive") rec.stop();
+}
+
 function setLiveReply(id){
   const m=(DB.live||[]).find(x=>x.id===id);
   window._liveReply=id;
@@ -2027,6 +2180,17 @@ function printFlyer(){
 .live-send{width:44px;height:44px;border-radius:50%;border:0;background:#00a884;color:#fff;font-size:1.1rem;cursor:pointer;flex:none}
 .live-pin{background:#182229;color:#ffd36a;padding:6px 10px;font-size:.8rem;border-bottom:1px solid #2a3942}
 .chat-ctl label{margin-top:6px}
+.live-tools{display:flex;gap:4px;padding:0 8px 6px;background:#1f2c34}
+.live-tools button,.live-tools label.tool{background:#2a3942;border:0;color:#e9edef;border-radius:50%;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:1.05rem}
+.live-media img,.live-media video{max-width:220px;border-radius:8px;display:block}
+.live-media audio{width:210px}
+.live-dl{color:#53bdeb;font-size:.78rem}
+.rec-on{background:#e11d48!important}
+.ticks{font-size:.8rem;letter-spacing:-1px;line-height:1;margin-left:4px}
+.ticks.one,.ticks.two{color:#8696a0}
+.ticks.blue{color:#53bdeb}
+
+
 
 </style></head><body>${node.outerHTML}
   <script>window.onload=function(){window.focus();window.print();};<\/script>
@@ -2276,7 +2440,7 @@ function ensureDocs(){
   if(DB.settings.constitution==null) DB.settings.constitution=defaultSettings().constitution;
   if(DB.settings.activities==null) DB.settings.activities="";
   if(!DB.settings.bankFiles) DB.settings.bankFiles=[];
-  if(!DB.settings.chatCtl) DB.settings.chatCtl={on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true};
+  if(!DB.settings.chatCtl) DB.settings.chatCtl={on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true};
   if(!DB.live) DB.live=[];
 }
 
