@@ -23,8 +23,8 @@
   --amber:#ffd36a; --amber-dim:#3a2e12; --teal:#25d366;
 }
 html[data-theme="light"]{
-  --bg:#f3eee0; --panel:#fffdf6; --card:#fff; --line:#d4c7a0;
-  --gold:#8a6808; --gold2:#5c4300; --ink:#16120a; --muted:#5a513d;
+  --bg:#efe6cf; --panel:#fffdf8; --card:#fffaf0; --line:#8a7330;
+  --gold:#7a5a00; --gold2:#3d2a00; --ink:#120e08; --muted:#3f3418;
   --green:#0d6b3c; --green-dim:#d7f3e4; --red:#a61b12; --red-dim:#fde7e4;
   --amber:#7a5000; --amber-dim:#ffefc2;
 }
@@ -135,6 +135,18 @@ html[data-font="sm"]{font-size:14px}
 html[data-font="md"]{font-size:16px}
 html[data-font="lg"]{font-size:18px}
 html[data-font="xl"]{font-size:20px}
+html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{background:#fff;color:#120e08;border-color:#8a7330}
+html[data-theme="light"] .card,html[data-theme="light"] .stat,html[data-theme="light"] .bubble{background:#fffaf0;color:#120e08}
+html[data-theme="light"] .brand h1,.brand p{text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.sticky-exp{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.sticky-exp table{margin:0}
+.sticky-exp thead th{position:sticky;top:0;background:#111;color:#f5d15a;z-index:2}
+html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
+.pay-pill{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:10px 12px;margin:6px 6px 0 0;cursor:pointer;font-weight:700;border:0}
+.live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#666;vertical-align:middle}
+.live-dot.on{background:#3dd68c;box-shadow:0 0 8px #3dd68c}
+.new-red{color:#ff4d3a;font-weight:700}
+
 @media(max-width:800px){
   .stats{grid-template-columns:1fr}
   .flyer-grid{grid-template-columns:1fr 1fr}
@@ -151,7 +163,7 @@ html[data-font="xl"]{font-size:20px}
 <div class="app">
   <div class="top">
     <div class="cine" aria-hidden="true">
-      <img class="cine-still" src="must-community.jpg" alt="">
+      <img class="cine-still" src="must-community.jpg" alt="MUST Graduates 2017">
       <video id="cineVid" muted autoplay loop playsinline preload="auto" poster="must-community.jpg" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture disableRemotePlayback>
         <source src="must-hero.mp4" type="video/mp4">
       </video>
@@ -197,7 +209,15 @@ function defaultSettings(){
     openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT,
     tickerText:"",
     theme:"dark", font:"md",
-    treasurer:{name:"Atuha Reggae", email:EMAIL, phone:"256777649497"}
+    treasurer:{name:"Atuha Reggae", email:EMAIL, phone:"256777649497"},
+    payMethods:[
+      {id:"mtn",name:"MTN Uganda",ussd:"*165*6*1*2*2#",note:"Enter Stanbic account 9030026155907, then your MTN PIN.",color:"#ffcc00"},
+      {id:"airtel",name:"Airtel Uganda",ussd:"*165*7*1*7#",note:"Enter Stanbic account 9030026155907, then your Airtel PIN.",color:"#e4002b"},
+      {id:"flexi",name:"FlexiPay",ussd:"Merchant 283718",note:"Contact the treasurer first, then use FlexiPay merchant code 283718.",color:"#0b6e4f"}
+    ],
+    constitution:"MUST Graduates 2017 Trust Fund\n\n1. Members contribute 10,000 each month from January 2025.\n2. Entitled if registered and not more than 4 months behind.\n3. Benefits follow the vote of members and the books of the treasurer.\n4. Bank: Stanbic 9030026155907.\n5. Officials serve the class of 2017 Education.",
+    activities:"",
+    bankFiles:[]
   };
 }
 function booksIn(){
@@ -462,8 +482,8 @@ function loadSess(){
   }catch(e){}
 }
 loadSess();
-const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["flyer","Flyer"],["backup","Backup"]];
-const TABS_M=[["home","My status"],["spend","Fund money"],["chat","Chat"],["profile","My details"],["note","Write to treasurer"]];
+const TABS_T=[["home","Home"],["members","Register"],["pay","Record"],["families","Family files"],["chat","Chat"],["expenses","Expenses"],["docs","Docs"],["flyer","Flyer"],["backup","Backup"]];
+const TABS_M=[["home","My status"],["spend","Fund money"],["chat","Chat"],["profile","My details"],["docs","Docs"],["note","Write to treasurer"]];
 
 function needPin(){
   if(authed) return true;
@@ -519,7 +539,7 @@ function applyUi(){
   document.documentElement.setAttribute("data-theme", s.theme||"dark");
   document.documentElement.setAttribute("data-font", s.font||"md");
   const foot=document.getElementById("foot");
-  if(foot) foot.innerHTML="© "+new Date().getFullYear()+" MUST Education Graduates 2017 · Figures as of "+new Date().toLocaleDateString()+" · "+(FB.ok?"Live book":"This phone")+(FB.user?" · published by "+esc(FB.user.email):"");
+  if(foot) foot.innerHTML=`<span class="live-dot ${FB.ok?"on":""}"></span>`+(FB.ok?"Live":"This phone")+" · © "+new Date().getFullYear()+" MUST Education Graduates 2017 · Figures as of "+new Date().toLocaleDateString();
 }
 document.addEventListener("click",e=>{
   if(!e.target.closest(".gear") && !e.target.closest("#uiMenu")){
@@ -589,6 +609,8 @@ function render(){
     if(tab==="spend") v.innerHTML=fundView(collected,spent,due);
     if(tab==="profile") v.innerHTML=profileView();
     if(tab==="note") v.innerHTML=memberNoteView();
+    if(tab==="chat") v.innerHTML=chatView(false);
+    if(tab==="docs") v.innerHTML=docsView(false);
   } else {
     if(tab==="home") v.innerHTML=treasHome(st,collected,spent);
     if(tab==="members") v.innerHTML=membersView();
@@ -596,6 +618,7 @@ function render(){
     if(tab==="pay") v.innerHTML=payView();
     if(tab==="chat") v.innerHTML=chatView(true);
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
+    if(tab==="docs") v.innerHTML=docsView(true);
     if(tab==="flyer") v.innerHTML=flyerView(st);
     if(tab==="backup") v.innerHTML=backupView();
   }
@@ -607,7 +630,7 @@ function memberHome(st){
   if(!found){
     return `<div class="card"><h3>Open your record</h3>
       <p style="font-size:.9rem;color:var(--muted)">${cloudLabel()}</p>
-      <p>Search your name, or the last 4 digits of your phone. You will only see your own balance.</p>
+      <p>You will only see your own balance. Sign in with your name, phone ending, or the code from the treasurer.</p>
       <input list="nm" id="whoBox" placeholder="Name or phone ending"/>
       <datalist id="nm">${names}</datalist>
       <div class="row" style="margin-top:10px">
@@ -654,13 +677,14 @@ function findMembers(q){
     if(n===q || n.indexOf(q)>=0) return true;
     const ph=String(m.phone||"").replace(/\D/g,"");
     if(digits.length>=4 && ph.endsWith(digits)) return true;
+    if((m.code||"").toLowerCase()===q) return true;
     return false;
   });
 }
 function pickMember(id){ const m=DB.members.find(x=>x.id==id); if(!m) return; who=m.name; closeModal(); render(); }
 function openMyStatus(){
   const name=(document.getElementById("whoBox").value||"").trim();
-  if(!name){ alert("Type your name or phone ending"); return; }
+  if(!name){ alert("Type your name, phone ending, or member code"); return; }
   const hits=findMembers(name);
   if(hits.length===1){ who=hits[0].name; render(); return; }
   if(hits.length>1){
@@ -795,10 +819,17 @@ function startMoneySlide(){
     if(lab && window._piePcts) lab.textContent=(window._piePcts[window._moneyI]||0)+"%";
   },2000);
 }
-function expRoll(list){
+function expRoll(list,canEdit){
   const rows=(list.length?list:[{date:"—",item:"No expenditure yet",amount:0,by:""}]);
-  const body=rows.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.item)}<div style="color:var(--muted);font-size:.75rem">C/O ${esc(e.by||"—")}</div></td><td>${ugx(e.amount)}</td></tr>`).join("");
-  return `<div class="credits"><div class="credits-inner"><table><thead><tr><th>Date</th><th>Item / C/O</th><th>Amount</th></tr></thead><tbody>${body}${body}</tbody></table></div></div>`;
+  const body=rows.map((e,i)=>`<tr>
+    <td>${esc(e.date)}</td>
+    <td>${esc(e.item)}<div style="color:var(--muted);font-size:.75rem">C/O ${esc(e.by||"—")}</div></td>
+    <td>${ugx(e.amount)}</td>
+    ${canEdit?`<td><button class="eye" onclick="toggleSeen(${i})">${e.seen===false?"🙈":"👁"}</button>
+      <button class="btn ghost" onclick="editExp(${i})">Edit</button>
+      <button class="btn danger" onclick="delExp(${i})">✕</button></td>`:""}
+  </tr>`).join("");
+  return `<div class="sticky-exp"><table><thead><tr><th>Date</th><th>Item / C/O</th><th>Amount</th>${canEdit?"<th></th>":""}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function fundView(collected,spent,due){
   const year=new Date().getFullYear();
@@ -828,10 +859,11 @@ function profileView(){
   if(!who) return `<div class="card"><p>Open My status first.</p></div>`;
   const m=DB.members.find(x=>x.name.toLowerCase()===who.toLowerCase());
   const p=m.profile||{};
-  if(p.submitted){
-    return `<div class="card"><h3>Details sent</h3>
-      <p>Your file is with the treasurer. It is not kept on this member page.</p>
-      <button class="btn ghost" onclick="mailMyDetails()">Email me a copy</button></div>`;
+  if(p.submitted && !window._editProfileAgain){
+    return `<div class="card"><h3>Details sent ${esc((p.at||"").slice(0,16))}</h3>
+      <p>The treasurer has your file. You may send an update; old and new will both be kept.</p>
+      <div class="row"><button class="btn gold" onclick="window._editProfileAgain=true;render()">Send an update</button>
+      <button class="btn ghost" onclick="mailMyDetails()">Email me a copy</button></div></div>`;
   }
   const sibs=p.people&&p.people.siblings?p.people.siblings:[{},{}];
   return `<div class="card"><h3>Personal details</h3>
@@ -888,7 +920,12 @@ function submitProfile(){
   const m=DB.members.find(x=>x.name.toLowerCase()===who.toLowerCase()); if(!m) return;
   const d=window._pendingProfile||collectProfile();
   m.email=d.email; m.phone=d.phone;
-  m.profile={address:d.address, extra:d.extra||"", people:d.people, submitted:true, at:new Date().toISOString()};
+  m.profileHistory=m.profileHistory||[];
+  if(m.profile && m.profile.submitted) m.profileHistory.push(JSON.parse(JSON.stringify(m.profile)));
+  m.profile={address:d.address, extra:d.extra||"", people:d.people, submitted:true, at:new Date().toISOString(), update:!!(m.profileHistory||[]).length};
+  DB.notices=DB.notices||[];
+  DB.notices.push({text:m.name+" submitted family details",from:"System",audience:"exec",at:new Date().toISOString()});
+  window._editProfileAgain=false;
   save();
   if(d.email){
     location.href="mailto:"+d.email+"?subject="+encodeURIComponent("Your MUST 2017 details copy")+"&body="+encodeURIComponent(profileText(m));
@@ -1028,6 +1065,7 @@ function membersView(){
       <label>Role</label><select id="edRole"><option>Member</option><option>Chairperson</option><option>Vice Chairperson</option><option>Secretary</option><option>Treasurer</option><option>PRO</option></select>
       <label>Membership fee paid</label><input id="edFee" type="number" value="10000"/>
       <label>Total contributed</label><input id="edPaid" type="number" value="0"/>
+      <label>Login code (confidential)</label><input id="edCode" placeholder="e.g. MUST17-042"/>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" onclick="saveMember(false)">Add new name</button>
         <button class="btn ghost" onclick="saveMember(true)">Update existing name</button>
@@ -1046,6 +1084,7 @@ function membersView(){
         <button class="btn ghost" onclick="showStmt(${x.m.id})">Statement</button>
         ${x.m.profile&&x.m.profile.submitted?`<button class="btn ghost" onclick="showFamily(${x.m.id})">Family</button>`:""}
         <button class="btn ghost" onclick="fillEdit(${x.m.id})">Edit</button>
+        <button class="btn wa" onclick="shareCode(${x.m.id})">Share code</button>
         <button class="btn danger" onclick="deleteMember(${x.m.id})">Delete</button>
       </td>
     </tr>`).join("")}</tbody></table></div>
@@ -1084,6 +1123,7 @@ function fillEdit(id){
   document.getElementById("edRole").value=m.role||"Member";
   document.getElementById("edFee").value=m.fee||0;
   document.getElementById("edPaid").value=m.paid||0;
+  const c=document.getElementById("edCode"); if(c) c.value=m.code||"";
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function saveMember(update){
@@ -1094,10 +1134,11 @@ function saveMember(update){
   const role=document.getElementById("edRole").value||"Member";
   const fee=Number(document.getElementById("edFee").value||0);
   const paid=Number(document.getElementById("edPaid").value||0);
+  const code=(document.getElementById("edCode")||{}).value||"";
   const existing=DB.members.find(m=>m.name.toLowerCase()===name.toLowerCase());
   if(update){
     if(!existing){ alert("No member with that name"); return; }
-    existing.phone=phone; existing.role=role; existing.fee=fee; existing.paid=paid;
+    existing.phone=phone; existing.role=role; existing.fee=fee; existing.paid=paid; existing.code=code.trim();
     existing.active=fee>0; existing.tx=existing.tx||[];
     existing.tx.push({type:"Updated by treasurer",amount:paid,at:new Date().toISOString()});
   } else {
@@ -1112,10 +1153,11 @@ function showStmt(id){
   const cl=classify(m,new Date());
   openModal(`<h3>Statement · ${esc(m.name)}</h3>
     <p>Role ${esc(m.role)} · phone ${esc(m.phone||"—")} · paid ${ugx(m.paid)} · remaining ${ugx(cl.remaining)}</p>
-    <div class="row" style="justify-content:flex-end">
-      <label>From</label><input id="stFrom" type="date"/>
-      <label>To</label><input id="stTo" type="date"/>
-      <button class="btn ghost" onclick="filterStmt(${id})">Filter period</button>
+    <div class="row" style="align-items:flex-end">
+      <span title="Filter by dates">📅</span>
+      <input id="stFrom" type="date"/>
+      <input id="stTo" type="date"/>
+      <button class="btn ghost" onclick="filterStmt(${id})" title="Filter">🔎</button>
     </div>
     <div class="row" style="margin:8px 0">
       <button class="btn gold" onclick="printStmt(${id})">Print statement</button>
@@ -1242,29 +1284,25 @@ function memberLines(m){
 }
 function downloadMemberStmt(id){ downloadStmt(id); }
 function filterStmt(id){
-  const m=DB.members.find(x=>x.id===id);
-  const a=document.getElementById("stFrom").value, b=document.getElementById("stTo").value;
-  const rows=(m.tx||[]).filter(t=>{
-    const d=String(t.at).slice(0,10);
-    if(a&&d<a) return false;
-    if(b&&d>b) return false;
+  const m=DB.members.find(x=>x.id==id); if(!m) return;
+  const a=(document.getElementById("stFrom")||{}).value||"";
+  const b=(document.getElementById("stTo")||{}).value||"";
+  let lines=memberLines(m);
+  lines=lines.filter(t=>{
+    const d=String(t.at||"");
+    if(a && d < a.slice(0,7) && d.length>=7) return false;
+    if(b && d > b.slice(0,7) && d.length>=7) return false;
+    if(a && d.length>=10 && d<a) return false;
+    if(b && d.length>=10 && d>b) return false;
     return true;
   });
-  document.getElementById("stRows").innerHTML=`<table><thead><tr><th>When</th><th>Note</th><th>Amount</th></tr></thead>
-    <tbody>${rows.map(t=>`<tr><td>${esc(t.at).slice(0,16)}</td><td>${esc(t.type)}</td><td>${ugx(t.amount)}</td></tr>`).join("")||"<tr><td colspan=3>None in this period</td></tr>"}</tbody></table>`;
+  const box=document.getElementById("stRows");
+  if(!box){ alert("Open the statement first"); return; }
+  box.innerHTML=`<table><thead><tr><th>Month</th><th>Expected</th><th>Applied</th><th>Status</th></tr></thead><tbody>`+
+    lines.map(r=>`<tr><td>${esc(r.type)}</td><td>${r.due!=null?ugx(r.due):"—"}</td><td>${ugx(r.amount)}</td><td>${r.ok?"Cleared":"Due"}</td></tr>`).join("")+
+    `</tbody></table>`;
 }
-function showFamily(id){
-  const m=DB.members.find(x=>x.id===id); const p=m.profile||{};
-  const pe=p.people||{};
-  const nm=o=>o&&o.name?`${o.name} (${o.sex||""}) ${o.phone||""}`:"—";
-  openModal(`<h3>${esc(m.name)}</h3>${m.photo?`<img class="photo" src="${m.photo}"/>`:""}
-    <p>${esc(m.email||"—")} · ${esc(m.phone||"—")}</p>
-    <p>${esc(p.address||"—")}</p>
-    <p>Spouse ${esc(nm(pe.spouse))}</p>
-    <p>Father ${esc(nm(pe.father))}</p>
-    <p>Mother ${esc(nm(pe.mother))}</p>
-    <p>Siblings ${(pe.siblings||[]).map(nm).join("; ")||"—"}</p>`);
-}
+
 
 function payView(){
   const q=(window._payQ||"").toLowerCase();
@@ -1379,7 +1417,7 @@ function expView(collected,spent){
     <button class="btn gold" style="margin-top:8px" onclick="addExp()">Add expense</button>
   </div>
   <div class="card">
-    ${expRoll(DB.expenses)}
+    ${expRoll(DB.expenses,true)}
     <div style="margin-top:10px">${DB.expenses.map((e,i)=>`<button class="btn ghost" style="margin:4px 4px 0 0" onclick="toggleSeen(${i})">${e.seen===false?"Show: "+esc(e.item):"Hide: "+esc(e.item)}</button>`).join("")}</div>
   </div>`;
 }
@@ -1667,6 +1705,122 @@ if(location.hash.startsWith("#reset=")){
     if(np && np.length>=4){ DB.pin=np; rec.used=true; save(); alert("PIN updated"); }
   }
 }
+
+function ensureDocs(){
+  DB.settings=DB.settings||defaultSettings();
+  if(!DB.settings.payMethods) DB.settings.payMethods=defaultSettings().payMethods;
+  if(DB.settings.constitution==null) DB.settings.constitution=defaultSettings().constitution;
+  if(DB.settings.activities==null) DB.settings.activities="";
+  if(!DB.settings.bankFiles) DB.settings.bankFiles=[];
+}
+function docsView(isTreas){
+  ensureDocs();
+  const pays=DB.settings.payMethods||[];
+  const files=(DB.settings.bankFiles||[]).filter(f=>isTreas||f.seen!==false);
+  const payBox=pays.map(p=>`<button class="pay-pill" style="background:${p.color||'#333'};color:#111" onclick="openPay('${p.id}')">${esc(p.name)}</button>`).join("");
+  let treas="";
+  if(isTreas){
+    treas=`<div class="card"><h3>Edit pages (treasurer)</h3>
+      <label>Constitution summary</label><textarea id="conEdit" rows="6">${esc(DB.settings.constitution||"")}</textarea>
+      <button class="btn gold" onclick="saveConstitution()">Save constitution</button>
+      <button class="btn wa" onclick="shareText('MUST 2017 constitution',DB.settings.constitution)">Share WhatsApp</button>
+      <label>Activities</label><textarea id="actEdit" rows="5">${esc(DB.settings.activities||"")}</textarea>
+      <button class="btn gold" onclick="saveActivities()">Save activities</button>
+      <button class="btn wa" onclick="shareText('MUST 2017 activities',DB.settings.activities)">Share WhatsApp</button>
+      <label>Pay methods (JSON list name, ussd, note)</label>
+      <textarea id="payEdit" rows="6">${esc(JSON.stringify(pays,null,2))}</textarea>
+      <button class="btn gold" onclick="savePays()">Save pay methods</button>
+      <label>Upload bank statement (image or PDF as file)</label>
+      <input type="file" onchange="uploadBank(event)"/>
+    </div>`;
+  }
+  return `<div class="card"><h3>How to pay</h3>
+      <p>Stanbic ${BANK}. Choose a company:</p>
+      ${payBox}
+    </div>
+    <div class="card"><h3>Constitution</h3>
+      <button class="btn ghost" onclick="openModal('<h3>Constitution</h3><pre style=white-space:pre-wrap>'+esc(DB.settings.constitution||'Not posted')+'</pre>')">Open summary</button>
+    </div>
+    <div class="card"><h3>Activities</h3>
+      <pre style="white-space:pre-wrap">${esc(DB.settings.activities||"No activities posted yet.")}</pre>
+    </div>
+    <div class="card"><h3>Bank statements</h3>
+      ${files.map((f,i)=>`<div class="row" style="justify-content:space-between;padding:6px 0">
+        <a href="${f.data}" download="${esc(f.name)}">${esc(f.name)}</a>
+        ${isTreas?`<span><button class="eye" onclick="toggleBank(${i})">${f.seen===false?"🙈":"👁"}</button>
+          <button class="btn danger" onclick="delBank(${i})">✕</button></span>`:""}
+      </div>`).join("")||"<p>None uploaded.</p>"}
+    </div>${treas}`;
+}
+function openPay(id){
+  ensureDocs();
+  const p=(DB.settings.payMethods||[]).find(x=>x.id===id); if(!p) return;
+  const msg=`MUST 2017 Trust Fund payment via ${p.name}\\n${p.ussd}\\n${p.note}\\nStanbic ${BANK}`;
+  openModal(`<h3>${esc(p.name)}</h3><p><b>${esc(p.ussd)}</b></p><p>${esc(p.note)}</p>
+    <p>Account ${BANK}</p>
+    <a class="btn wa" href="${wa(DB.settings.treasurer&&DB.settings.treasurer.phone||'',msg)}" target="_blank">Share on WhatsApp</a>`);
+}
+function saveConstitution(){ if(!needPin())return; ensureDocs(); DB.settings.constitution=document.getElementById("conEdit").value; save(); alert("Saved"); render(); }
+function saveActivities(){ if(!needPin())return; ensureDocs(); DB.settings.activities=document.getElementById("actEdit").value; save(); alert("Saved"); render(); }
+function savePays(){ if(!needPin())return; try{ DB.settings.payMethods=JSON.parse(document.getElementById("payEdit").value); save(); alert("Saved"); render(); }catch(e){ alert("Fix the list"); } }
+function shareText(title,body){
+  const ph=(DB.settings.treasurer&&DB.settings.treasurer.phone)||"";
+  location.href=wa(ph,(title||"")+"\\n"+(body||""));
+}
+function uploadBank(ev){
+  if(!needPin()) return;
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ ensureDocs(); DB.settings.bankFiles.push({name:f.name,data:r.result,at:new Date().toISOString(),seen:true}); save(); render(); };
+  r.readAsDataURL(f);
+}
+function toggleBank(i){ if(!needPin())return; ensureDocs(); DB.settings.bankFiles[i].seen=DB.settings.bankFiles[i].seen===false; save(); render(); }
+function delBank(i){ if(!needPin())return; if(!confirm("Delete this file?"))return; DB.settings.bankFiles.splice(i,1); save(); render(); }
+function editExp(i){
+  if(!needPin()) return;
+  const e=DB.expenses[i]; if(!e) return;
+  openModal(`<h3>Edit expense</h3>
+    <label>Item</label><input id="exEItem" value="${esc(e.item)}"/>
+    <label>Amount</label><input id="exEAmt" type="number" value="${e.amount}"/>
+    <label>C/O</label><input id="exEBy" value="${esc(e.by||"")}"/>
+    <label>Date</label><input id="exEDate" type="date" value="${esc(e.date||"")}"/>
+    <button class="btn gold" onclick="saveExp(${i})">Save</button>`);
+}
+function saveExp(i){
+  if(!needPin()) return;
+  const e=DB.expenses[i]; if(!e) return;
+  e.item=document.getElementById("exEItem").value.trim();
+  e.amount=Number(document.getElementById("exEAmt").value||0);
+  e.by=document.getElementById("exEBy").value.trim();
+  e.date=document.getElementById("exEDate").value;
+  closeModal(); save(); render();
+}
+function delExp(i){
+  if(!needPin()) return;
+  if(!confirm("Remove this expense?")) return;
+  DB.expenses.splice(i,1); save(); render();
+}
+function shareCode(id){
+  const m=DB.members.find(x=>x.id==id); if(!m) return;
+  if(!m.code){ alert("Set a login code first, then Update existing name."); return; }
+  if(!m.phone){ alert("No phone on file"); return; }
+  const msg=`MUST Graduates 2017 Trust Fund\\nHello ${m.name}, your confidential login code is ${m.code}. Use it with your name on https://must-2017-trust-fund.vercel.app to see only your balance. Pay 10,000/month to Stanbic ${BANK}.`;
+  window.open(wa(m.phone,msg),"_blank");
+}
+function showFamily(id){
+  const m=DB.members.find(x=>x.id===id); if(!m) return;
+  const hist=m.profileHistory||[];
+  const cur=m.profile||{};
+  const pe=cur.people||{};
+  const nm=o=>o&&o.name?`${o.name} (${o.sex||""}) ${o.phone||""}`:"—";
+  openModal(`<h3>${esc(m.name)}</h3>
+    ${hist.length?`<p>Previous files:</p>`+hist.map(h=>`<div class="bubble"><small>${esc(h.at||"")}</small><div>${esc(h.address||"")} · ${esc((h.people&&h.people.spouse&&h.people.spouse.name)||"")}</div></div>`).join(""):""}
+    <div class="${cur.update?"new-red":""}"><p>Latest ${esc((cur.at||"").slice(0,16))}</p>
+    <p>${esc(m.email||"—")} · ${esc(m.phone||"—")}</p>
+    <p>${esc(cur.address||"—")}</p>
+    <p>Spouse ${esc(nm(pe.spouse))}</p></div>`);
+}
+
 function bootCine(){
   const v=document.getElementById("cineVid");
   const still=document.querySelector(".cine-still");
