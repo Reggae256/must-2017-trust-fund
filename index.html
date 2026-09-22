@@ -145,7 +145,7 @@ html[data-theme="light"] .sticky-exp thead th{background:#3d2a00;color:#fff1b0}
 .pay-pill{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:10px 12px;margin:6px 6px 0 0;cursor:pointer;font-weight:700;border:0}
 .pay-row{display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto;padding:6px 0 4px;-webkit-overflow-scrolling:touch}
 .pay-logo{flex:1 1 0;min-width:96px;max-width:160px;background:#fff;border:1px solid #333;border-radius:14px;padding:8px 8px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
-.pay-logo img{height:40px;width:auto;max-width:100%;object-fit:contain;display:block}
+.pay-logo img{height:48px;width:auto;max-width:100%;object-fit:contain;display:block}
 .pay-logo span{font-size:.72rem;color:#111;font-weight:700;text-align:center}
 
 .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#666;vertical-align:middle}
@@ -2567,7 +2567,7 @@ function payLogoSrc(p){
 function payLogoRow(pays){
   return `<div class="pay-row">`+pays.map(p=>{
     const src=payLogoSrc(p);
-    return `<button type="button" class="pay-logo" onclick="openPay('${p.id}')">${src?`<img alt="${esc(p.name)}" src="${src}"/>`:`<span>${esc(p.name)}</span>`}<span>${esc(p.name)}</span></button>`;
+    return `<button type="button" class="pay-logo" onclick="openPay('${p.id}')" title="${esc(p.name)}">${src?`<img alt="${esc(p.name)}" src="${src}"/>`:`<span>${esc(p.name)}</span>`}</button>`;
   }).join("")+`</div>`;
 }
 function howPayView(isTreas){
