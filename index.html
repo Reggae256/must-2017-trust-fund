@@ -492,9 +492,21 @@ function classify(m, now){
   return {code:"no",label:"Not entitled",remaining,monthsBehind,expectedNow,prepaid:0,monthsAhead:0};
 }
 function ugx(n){ return Number(n||0).toLocaleString("en-UG"); }
+function digitsPhone(phone){ return String(phone||"").replace(/\D/g,""); }
+function waPhone(phone){
+  let d=digitsPhone(phone);
+  if(!d) return "";
+  if(d.startsWith("2560")) d="256"+d.slice(4);
+  else if(d.startsWith("0") && d.length>=9) d="256"+d.slice(1);
+  else if(d.startsWith("256")) d=d;
+  else if(d.length===9 && d[0]==="7") d="256"+d;
+  else if(d.length===10 && d[0]==="7") d="256"+d.slice(0,9);
+  return d;
+}
 function wa(phone,text){
-  if(!phone) return "";
-  return "https://wa.me/"+String(phone).replace(/\D/g,"")+"?text="+encodeURIComponent(text||"");
+  const d=waPhone(phone);
+  if(!d) return "";
+  return "https://wa.me/"+d+"?text="+encodeURIComponent(text||"");
 }
 function esc(s){ return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 function tagMsg(t){
@@ -1295,7 +1307,7 @@ function saveMember(update){
   if(!needPin()) return;
   const name=(document.getElementById("edName").value||"").trim();
   if(!name){ alert("Name required"); return; }
-  const phone=(document.getElementById("edPhone").value||"").replace(/\D/g,"");
+  const phone=waPhone(document.getElementById("edPhone").value||"");
   const role=document.getElementById("edRole").value||"Member";
   const fee=Number(document.getElementById("edFee").value||0);
   const paid=Number(document.getElementById("edPaid").value||0);
@@ -2209,7 +2221,7 @@ function shareCode(id){
     <p>${esc(m.name)}</p>
     <p style="font-size:2rem;letter-spacing:.18em;font-weight:800;color:var(--gold2)">${esc(m.code)}</p>
     <p>Only the treasurer sees this. Send when ready.</p>
-    ${m.phone?`<a class="btn wa" target="_blank" href="${wa(m.phone,msg)}">Send on WhatsApp</a>`:"<p>No phone on file.</p>"}
+    ${waPhone(m.phone)?`<a class="btn wa" target="_blank" href="${wa(m.phone,msg)}">Send on WhatsApp · ${esc(waPhone(m.phone))}</a>`:"<p>No phone on file. Add 07… or 256… first.</p>"}
     <button class="btn ghost" onclick="closeModal()">Close</button>`);
 }
 function showFamily(id){
