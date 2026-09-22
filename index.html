@@ -1044,6 +1044,7 @@ function setPause(paused){
 }
 
 function membersView(){
+  (DB.members||[]).forEach(m=>{ if(!m.code) assignCode(m,false); });
   const q=(window._q||"").toLowerCase();
   const filter=window._flt||"active";
   let rows=DB.members.map(m=>({m,...classify(m,new Date())}));
@@ -1145,12 +1146,14 @@ function saveMember(update){
     if(!existing){ alert("No member with that name"); return; }
     existing.phone=phone; existing.role=role; existing.fee=fee; existing.paid=paid;
     if(code.trim()) existing.code=code.trim(); else assignCode(existing,false);
-    existing.active=fee>0; assignCode(existing,false); existing.tx=existing.tx||[];
+    existing.active=fee>0; existing.tx=existing.tx||[];
     existing.tx.push({type:"Updated by treasurer",amount:paid,at:new Date().toISOString()});
   } else {
     if(existing){ alert("Name already exists — use Update"); return; }
     const id=DB.members.reduce((n,m)=>Math.max(n,m.id||0),0)+1;
-    DB.members.push({id,name,phone,role,fee,paid,active:fee>0,months:{},tx:[{type:"Added by treasurer",amount:paid,at:new Date().toISOString()}]});
+    const neu={id,name,phone,role,fee,paid,active:fee>0,months:{},tx:[{type:"Added by treasurer",amount:paid,at:new Date().toISOString()}]};
+    assignCode(neu,false); if(code.trim()) neu.code=code.trim();
+    DB.members.push(neu);
   }
   save(); render();
 }
