@@ -1416,12 +1416,14 @@ function saveMember(update){
   const fee=Number(document.getElementById("edFee").value||0);
   const paid=Number(document.getElementById("edPaid").value||0);
   const code=(document.getElementById("edCode")||{}).value||"";
-  const existing=DB.members.find(m=>m.name.toLowerCase()===name.toLowerCase());
+  const byId=window._editId!=null?DB.members.find(m=>String(m.id)===String(window._editId)):null;
+  const existing=byId||DB.members.find(m=>m.name.toLowerCase()===name.toLowerCase());
   if(update){
     if(!existing){ alert("No member with that name"); return; }
+    existing.name=name;
     existing.phone=phone; existing.role=role; existing.fee=fee; existing.paid=paid;
     if(code.trim()) existing.code=code.trim(); else assignCode(existing,false);
-    existing.active=fee>0; existing.tx=existing.tx||[];
+    existing.active=fee>0; existing.tx=existing.tx||[]; window._editId=null; try{closeModal()}catch(e){}
     existing.tx.push({type:"Updated by treasurer",amount:paid,at:new Date().toISOString()});
   } else {
     if(existing){ alert("Name already exists — use Update"); return; }
