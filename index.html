@@ -46,8 +46,16 @@ h1,h2,h3,.brand{font-family:"Cormorant Garamond",Georgia,serif}
 .top>.row,.top .brand,.top .crest,.top .mode,.top .gear{position:relative;z-index:2}
 .brand h1,.brand p{text-shadow:0 2px 14px #000,0 0 4px #000}
 .crest{width:78px;height:78px;flex:none}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:grid;place-items:center;z-index:40;padding:16px}
-.modal .box{background:#161616;border:1px solid #3a3322;border-radius:16px;padding:16px;max-width:720px;width:100%;max-height:86vh;overflow:auto}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:grid;place-items:end center;z-index:60;padding:10px 10px calc(12px + env(safe-area-inset-bottom));}
+.modal .box{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px 16px 12px 12px;padding:16px 16px 22px;max-width:720px;width:100%;max-height:92vh;overflow:auto;-webkit-overflow-scrolling:touch}
+.modal .box h3,.modal .box label,.modal .box p{color:var(--ink)}
+.modal .box label{opacity:.85}
+@media(min-width:700px){.modal{place-items:center}}
+html[data-theme="light"] .modal .box{background:#fffdf8;color:#120e08}
+html[data-theme="light"] .modal .box h3{color:#3d2a00}
+html[data-theme="light"] .card h3{color:#3d2a00}
+html[data-theme="light"] .brand h1{color:#fff1b0}
+
 .chart{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .legend span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);margin:4px 0}
 .dot{width:10px;height:10px;border-radius:50%}
@@ -1367,21 +1375,20 @@ function memberMenu(id,btn){
 }
 function fillEdit(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
-  window._q="";
-  const box=document.getElementById("addBox");
-  if(box) box.style.display="";
-  const search=document.getElementById("regSearch");
-  if(search) search.value="";
-  if(!document.getElementById("edName")){ render(); }
-  const nameBox=document.getElementById("edName");
-  if(!nameBox){ window._editId=id; tab="members"; render(); setTimeout(()=>fillEdit(id),0); return; }
-  document.getElementById("edName").value=m.name;
-  document.getElementById("edPhone").value=m.phone||"";
-  document.getElementById("edRole").value=m.role||"Member";
-  document.getElementById("edFee").value=m.fee||0;
-  document.getElementById("edPaid").value=m.paid||0;
-  const c=document.getElementById("edCode"); if(c) c.value=m.code||"";
-  window.scrollTo({top:0,behavior:"smooth"});
+  window._editId=id;
+  openModal(`<h3>Edit member</h3>
+    <label>Name</label><input id="edName" value="${esc(m.name)}"/>
+    <label>Phone</label><input id="edPhone" value="${esc(m.phone||"")}" placeholder="2567…"/>
+    <label>Role</label><select id="edRole">
+      ${["Member","Chairperson","Vice Chairperson","Secretary","Treasurer","PRO"].map(r=>`<option ${ (m.role||"Member")===r?"selected":""}>${r}</option>`).join("")}
+    </select>
+    <label>Membership fee paid</label><input id="edFee" type="number" value="${m.fee||0}"/>
+    <label>Total contributed</label><input id="edPaid" type="number" value="${m.paid||0}"/>
+    <label>Login code (confidential)</label><input id="edCode" value="${esc(m.code||"")}"/>
+    <div class="row" style="margin-top:12px">
+      <button class="btn gold" onclick="saveMember(true)">Save changes</button>
+      <button class="btn ghost" onclick="closeModal()">Close</button>
+    </div>`);
 }
 function saveMember(update){
   if(!needPin()) return;
@@ -1894,6 +1901,8 @@ function liveCtlCard(){
     <div class="row" style="margin-top:10px">
       <button class="btn gold" onclick="saveChatCtl()">Save chat rules</button>
       <button class="btn danger" onclick="clearLive()">Clear live room</button>
+      <button class="btn danger" onclick="clearAssocChat()">Clear association notices</button>
+      <button class="btn danger" onclick="clearAllChats()">Clear all chats</button>
     </div>
   </div>`;
 }
@@ -2145,6 +2154,16 @@ function clearLive(){
   if(!needPin()) return;
   if(!confirm("Clear all live chat messages?")) return;
   DB.live=[]; save(); render();
+}
+function clearAssocChat(){
+  if(!needPin()) return;
+  if(!confirm("Clear Association room messages?")) return;
+  DB.chat=[]; save(); render();
+}
+function clearAllChats(){
+  if(!needPin()) return;
+  if(!confirm("Clear live room and Association room?")) return;
+  DB.live=[]; DB.chat=[]; save(); render();
 }
 
 function summarizeChat(){
