@@ -450,7 +450,8 @@ function listenCloud(){
     if(!incoming || !incoming.members) return;
     const cat=Number(cloud.updatedAt||0);
     const lat=Number(DB.updatedAt||0);
-    if(cat && lat && cat<=lat) return;
+    const treasHere=!!(authed && FB.user);
+    if(treasHere && cat && lat && cat<=lat) return;
     FB.skip=true;
     incoming.settings=Object.assign(defaultSettings(), incoming.settings||{});
     incoming.notices=incoming.notices||[];
@@ -483,9 +484,10 @@ function pushCloud(){
     }).catch(e=>{ FB.err=e.message||String(e); }).finally(()=>{ FB.pushing=false; });
 }
 function save(){
+  DB.updatedAt=Date.now();
   localStorage.setItem(KEY, JSON.stringify(DB));
   clearTimeout(save._t);
-  save._t=setTimeout(pushCloud, 500);
+  save._t=setTimeout(pushCloud, 400);
 }
 function cloudLabel(){
   if(!FB.ok && FB.err==="not-linked") return "This phone only. Cloud keys are missing.";
