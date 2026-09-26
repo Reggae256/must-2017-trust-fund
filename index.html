@@ -554,6 +554,28 @@ function connectCloud(){
     render();
   }catch(e){ alert("Could not read that config. Paste the firebaseConfig object from Firebase."); }
 }
+
+function refreshLiveBook(alertOk){
+  if(!FB.db){ if(alertOk) alert("Not connected to the live book yet. Check internet."); return; }
+  FB.db.collection("ledger").doc("main").get().then(snap=>{
+    if(!snap.exists || !snap.data() || !snap.data().db){ if(alertOk) alert("Live book is empty. Treasurer must publish first."); return; }
+    const cloud=snap.data();
+    FB.skip=true;
+    const keepWho=who;
+    DB=cloud.db;
+    DB.settings=Object.assign(defaultSettings(), DB.settings||{});
+    DB.updatedAt=cloud.updatedAt||Date.now();
+    localStorage.setItem(KEY, JSON.stringify(DB));
+    FB.skip=false; FB.at=DB.updatedAt;
+    who=keepWho;
+    saveSess();
+    render();
+    if(alertOk){
+      const m=DB.members.find(x=>x.name.toLowerCase()===(who||"").toLowerCase());
+      alert("Live book loaded. Paid total: "+(m?Number(m.paid||0).toLocaleString():"not found"));
+    }
+  }).catch(e=>{ if(alertOk) alert("Could not read live book: "+(e.message||e)); });
+}
 function pullCloudNow(){
   if(!FB.db){ alert("Link Firebase first"); return; }
   FB.db.collection("ledger").doc("main").get().then(snap=>{
@@ -942,6 +964,7 @@ function confirmSignCode(){
   who=m.name;
   window._signId="";
   saveSess();
+  refreshLiveBook(false);
   render();
 }
 function pickSignName(name){
