@@ -2655,11 +2655,17 @@ function howPayView(isTreas){
 }
 function constitutionView(isTreas){
   ensureDocs();
+  if(!isTreas){
+    return `<div class="card"><h3>Trust fund Association Constitution</h3>
+      <pre style="white-space:pre-wrap">${esc(DB.settings.constitution||"Not posted")}</pre></div>`;
+  }
   return `<div class="card"><h3>Trust fund Association Constitution</h3>
-    <pre style="white-space:pre-wrap">${esc(DB.settings.constitution||"Not posted")}</pre></div>`+
-    (isTreas?`<div class="card"><textarea id="conEdit" rows="8">${esc(DB.settings.constitution||"")}</textarea>
-      <button class="btn gold" onclick="saveConstitution()">Save</button>
-      <button class="btn wa" onclick="shareText('MUST 2017 constitution',DB.settings.constitution)">Share WhatsApp</button></div>`:"");
+    <p style="font-size:.8rem;color:var(--muted)">Edit the text below, then Save. Members see this on My account.</p>
+    <textarea id="conEditTreas" rows="12">${esc(DB.settings.constitution||"")}</textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" type="button" onclick="saveConstitution()">Save constitution</button>
+      <button class="btn wa" type="button" onclick="shareText('MUST 2017 constitution',(document.getElementById('conEditTreas')||{}).value||DB.settings.constitution||'')">Share WhatsApp</button>
+    </div></div>`;
 }
 function activitiesView(isTreas){
   ensureDocs();
@@ -2765,7 +2771,17 @@ function openPay(id){
     <div class="row"><input value="${BANK}" readonly/><button class="btn ghost" type="button" onclick="copyText('${BANK}')">⧉ copy</button></div>
     <a class="btn wa" href="${wa((DB.settings.treasurer&&DB.settings.treasurer.phone)||'',msg)}" target="_blank">Share on WhatsApp</a>`);
 }
-function saveConstitution(){ if(!needPin())return; ensureDocs(); DB.settings.constitution=document.getElementById("conEdit").value; save(); alert("Saved"); render(); }
+function saveConstitution(){
+  if(!needPin()) return;
+  ensureDocs();
+  const box=document.getElementById("conEditTreas")||document.getElementById("conEdit");
+  if(!box){ alert("Editor not found. Open Board / Updates."); return; }
+  DB.settings.constitution=box.value;
+  localStorage.setItem(KEY, JSON.stringify(DB));
+  if(typeof pushCloud==="function") pushCloud();
+  alert("Constitution saved");
+  render();
+}
 function saveActivities(){ if(!needPin())return; ensureDocs(); DB.settings.activities=document.getElementById("actEdit").value; save(); alert("Saved"); render(); }
 function savePays(){ if(!needPin())return; try{ DB.settings.payMethods=JSON.parse(document.getElementById("payEdit").value); save(); alert("Saved"); render(); }catch(e){ alert("Fix the list"); } }
 function shareText(title,body){
