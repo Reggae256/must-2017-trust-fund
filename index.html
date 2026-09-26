@@ -451,7 +451,15 @@ function listenCloud(){
     const cat=Number(cloud.updatedAt||0);
     const lat=Number(DB.updatedAt||0);
     const treasHere=!!(authed && FB.user);
-    if(treasHere && cat && lat && cat<=lat) return;
+    if(incoming.members && incoming.members.length){
+      incoming.members.forEach(cm=>{
+        const loc=(DB.members||[]).find(x=>String(x.id)===String(cm.id))
+          || (DB.members||[]).find(x=>(x.name||"").toLowerCase()===(cm.name||"").toLowerCase());
+        if(loc){ loc.paid=cm.paid; loc.fee=cm.fee; loc.tx=cm.tx||loc.tx; loc.active=cm.active; loc.code=cm.code||loc.code; }
+      });
+      try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+    }
+    if(treasHere && cat && lat && cat<=lat){ render(); return; }
     FB.skip=true;
     incoming.settings=Object.assign(defaultSettings(), incoming.settings||{});
     incoming.notices=incoming.notices||[];
