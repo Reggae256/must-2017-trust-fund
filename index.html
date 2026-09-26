@@ -1394,18 +1394,35 @@ function fillEdit(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
   window._editId=id;
   openModal(`<h3>Edit member</h3>
-    <label>Name</label><input id="edName" value="${esc(m.name)}"/>
-    <label>Phone</label><input id="edPhone" value="${esc(m.phone||"")}" placeholder="2567…"/>
-    <label>Role</label><select id="edRole">
+    <label>Name</label><input id="emName" value="${esc(m.name)}"/>
+    <label>Phone</label><input id="emPhone" value="${esc(m.phone||"")}" placeholder="2567…"/>
+    <label>Role</label><select id="emRole">
       ${["Member","Chairperson","Vice Chairperson","Secretary","Treasurer","PRO"].map(r=>`<option ${ (m.role||"Member")===r?"selected":""}>${r}</option>`).join("")}
     </select>
-    <label>Membership fee paid</label><input id="edFee" type="number" value="${m.fee||0}"/>
-    <label>Total contributed</label><input id="edPaid" type="number" value="${m.paid||0}"/>
-    <label>Login code (confidential)</label><input id="edCode" value="${esc(m.code||"")}"/>
+    <label>Membership fee paid</label><input id="emFee" type="number" value="${m.fee||0}"/>
+    <label>Total contributed</label><input id="emPaid" type="number" value="${m.paid||0}"/>
+    <label>Login code (confidential)</label><input id="emCode" value="${esc(m.code||"")}"/>
     <div class="row" style="margin-top:12px">
-      <button class="btn gold" onclick="saveMember(true)">Save changes</button>
+      <button class="btn gold" onclick="saveMemberEdit()">Save changes</button>
       <button class="btn ghost" onclick="closeModal()">Close</button>
     </div>`);
+}
+function saveMemberEdit(){
+  if(!needPin()) return;
+  const m=DB.members.find(x=>String(x.id)===String(window._editId));
+  if(!m){ alert("That member is not on the register"); return; }
+  const name=((document.getElementById("emName")||{}).value||"").trim();
+  if(!name){ alert("Name required"); return; }
+  m.name=name;
+  m.phone=waPhone((document.getElementById("emPhone")||{}).value||"");
+  m.role=(document.getElementById("emRole")||{}).value||"Member";
+  m.fee=Number((document.getElementById("emFee")||{}).value||0);
+  m.paid=Number((document.getElementById("emPaid")||{}).value||0);
+  const code=((document.getElementById("emCode")||{}).value||"").trim();
+  if(code) m.code=code; else assignCode(m,false);
+  m.active=m.fee>0;
+  window._editId=null;
+  closeModal(); save(); render();
 }
 function saveMember(update){
   if(!needPin()) return;
