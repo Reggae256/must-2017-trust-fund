@@ -153,6 +153,20 @@ html[data-font="sm"]{font-size:14px}
 html[data-font="md"]{font-size:16px}
 html[data-font="lg"]{font-size:18px}
 html[data-font="xl"]{font-size:20px}
+
+html[data-theme="light"] .btn.ghost,
+html[data-theme="light"] .btn:not(.gold):not(.wa):not(.danger):not(.on){
+  color:#3d2a00;border-color:#8a7330;background:#fff8e8;
+}
+html[data-theme="light"] .stat span{color:#3d2a00}
+html[data-theme="light"] label{color:#3d2a00}
+html[data-theme="light"] .menu-pop button{color:#120e08}
+html[data-theme="light"] .kebab{color:#120e08;border-color:#8a7330;background:#fff8e8}
+html[data-theme="light"] .kebab-pop{background:#fffdf8}
+html[data-theme="light"] .kebab-pop button{color:#120e08}
+html[data-theme="light"] .gear{color:#120e08;background:#fff8e8}
+.new-red,.changed{color:#a61b12;font-weight:700}
+
 html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{background:#fff;color:#120e08;border-color:#8a7330}
 html[data-theme="light"] .card,html[data-theme="light"] .stat,html[data-theme="light"] .bubble{background:#fffaf0;color:#120e08}
 html[data-theme="light"] .brand h1,.brand p{text-shadow:0 2px 10px rgba(0,0,0,.55)}
@@ -968,14 +982,7 @@ function familiesView(){
     <div class="card"><h3>Submitted family files</h3>
     <div class="row"><button class="btn gold" onclick="exportFamilies()">Download Excel</button>
     <button class="btn ghost" onclick="printFamilies()">Print / PDF</button></div>
-    ${rows.map(m=>{
-      const pe=(m.profile.people)||{};
-      const nm=o=>o&&o.name?`${o.name} (${o.sex||""}) ${o.phone||""}`:"—";
-      return `<div class="card"><b>${esc(m.name)}</b><br>Email ${esc(m.email||"—")} · Phone ${esc(m.phone||"—")}<br>
-        Address ${esc(m.profile.address||"—")}<br>
-        Spouse ${esc(nm(pe.spouse))}<br>Father ${esc(nm(pe.father))}<br>Mother ${esc(nm(pe.mother))}<br>Guardian ${esc(nm(pe.guardian))}<br>
-        Siblings ${(pe.siblings||[]).map(nm).join("; ")||"—"}</div>`;
-    }).join("")||"<p>None submitted.</p>"}</div>`;
+    ${rows.map(m=>familyCard(m)).join("")||"<p>None submitted.</p>"}</div>`;
 }
 function approvePend(i){
   const p=DB.pending[i]; if(!p) return;
@@ -2818,18 +2825,59 @@ function shareCode(id){
     ${waPhone(m.phone)?`<a class="btn wa" target="_blank" href="${wa(m.phone,msg)}">Send on WhatsApp · ${esc(waPhone(m.phone))}</a>`:"<p>No phone on file. Add 07… or 256… first.</p>"}
     <button class="btn ghost" onclick="closeModal()">Close</button>`);
 }
+
+function personLine(o){
+  if(!o) return "—";
+  if(typeof o==="string") return o;
+  if(typeof o!=="object") return String(o);
+  const n=o.name||o.full||"";
+  if(!n && !o.phone) return "—";
+  return `${n}${o.sex?" ("+o.sex+")":""}${o.phone?" "+o.phone:""}`.trim();
+}
+function familyChanged(m, key, now){
+  const hist=(m.profileHistory||[]);
+  if(!hist.length) return false;
+  const old=hist[hist.length-1]||{};
+  const prev=key==="address"?old.address: (old.people||{})[key];
+  const a=typeof now==="string"?now:personLine(now);
+  const b=typeof prev==="string"?prev:personLine(prev);
+  return String(a||"")!==String(b||"");
+}
+function familyCard(m){
+  const pe=(m.profile&&m.profile.people)||{};
+  const ch=k=>familyChanged(m,k, k==="address"?m.profile.address:pe[k]);
+  const sib=(pe.siblings||[]).map(personLine).join("; ")||"—";
+  const sibCh=familyChanged(m,"siblings", pe.siblings);
+  return `<div class="card" onclick="showFamily(${m.id})" style="cursor:pointer">
+    <b>${esc(m.name)}</b> ${m.profile&&m.profile.update?`<span class="changed">updated</span>`:""}<br>
+    Email ${esc(m.email||"—")} · Phone ${esc(m.phone||"—")}<br>
+    <span class="${ch("address")?"changed":""}">Address ${esc((m.profile&&m.profile.address)||"—")}</span><br>
+    <span class="${ch("spouse")?"changed":""}">Spouse ${esc(personLine(pe.spouse))}</span><br>
+    <span class="${ch("father")?"changed":""}">Father ${esc(personLine(pe.father))}</span><br>
+    <span class="${ch("mother")?"changed":""}">Mother ${esc(personLine(pe.mother))}</span><br>
+    <span class="${ch("guardian")?"changed":""}">Guardian ${esc(personLine(pe.guardian))}</span><br>
+    <span class="${sibCh?"changed":""}">Siblings ${esc(sib)}</span>
+    <p style="font-size:.8rem;margin:8px 0 0">Tap card to see previous file</p>
+  </div>`;
+}
 function showFamily(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
   const hist=m.profileHistory||[];
   const cur=m.profile||{};
   const pe=cur.people||{};
-  const nm=o=>o&&o.name?`${o.name} (${o.sex||""}) ${o.phone||""}`:"—";
+  const block=(title,p,people)=>{
+    const peo=people||{};
+    return `<div class="bubble"><b>${esc(title)}</b><br><small>${esc(p.at||"")}</small>
+      <div>Address ${esc(p.address||"—")}</div>
+      <div>Spouse ${esc(personLine(peo.spouse))}</div>
+      <div>Father ${esc(personLine(peo.father))}</div>
+      <div>Mother ${esc(personLine(peo.mother))}</div>
+      <div>Guardian ${esc(personLine(peo.guardian))}</div>
+      <div>Siblings ${esc((peo.siblings||[]).map(personLine).join("; ")||"—")}</div></div>`;
+  };
   openModal(`<h3>${esc(m.name)}</h3>
-    ${hist.length?`<p>Previous files:</p>`+hist.map(h=>`<div class="bubble"><small>${esc(h.at||"")}</small><div>${esc(h.address||"")} · ${esc((h.people&&h.people.spouse&&h.people.spouse.name)||"")}</div></div>`).join(""):""}
-    <div class="${cur.update?"new-red":""}"><p>Latest ${esc((cur.at||"").slice(0,16))}</p>
-    <p>${esc(m.email||"—")} · ${esc(m.phone||"—")}</p>
-    <p>${esc(cur.address||"—")}</p>
-    <p>Spouse ${esc(nm(pe.spouse))}</p></div>`);
+    <p class="changed">Latest file</p>${block("Current",cur,pe)}
+    ${hist.length?`<p>Previous files</p>`+hist.slice().reverse().map((h,i)=>block("Old "+(i+1),h,h.people)).join(""):"<p>No earlier file.</p>"}`);
 }
 
 function bootCine(){
