@@ -149,6 +149,13 @@ footer{text-align:center;color:var(--ink);font-size:.9rem;margin-top:18px;paddin
 .gear{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:8px 12px;font:inherit;cursor:pointer}
 .menu-pop{position:absolute;right:16px;top:86px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;z-index:30;min-width:230px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
 .eye{border:0;background:transparent;cursor:pointer;font-size:1.1rem}
+
+.log-bars .log-row{display:grid;grid-template-columns:140px 1fr 36px;gap:8px;align-items:center;margin:6px 0;font-size:.85rem}
+.log-bars i{display:block;height:10px;background:#f5d15a;border-radius:99px}
+.log-days{display:flex;align-items:flex-end;gap:6px;height:120px;overflow-x:auto;padding-top:8px}
+.log-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:28px;height:110px}
+.log-col i{display:block;width:16px;background:#f5d15a;border-radius:6px 6px 2px 2px}
+.log-col small{font-size:.62rem;color:var(--muted);margin-top:4px}
 html[data-font="sm"]{font-size:14px}
 html[data-font="md"]{font-size:16px}
 html[data-font="lg"]{font-size:18px}
@@ -672,7 +679,7 @@ function loadSess(){
   }catch(e){}
 }
 loadSess();
-const TABS_T=[["home","Home"],["members","Members"],["pay","Payments"],["families","Family files"],["chat","Chat"],["expenses","Money out"],["updates","Board"],["flyer","Flyer"],["backup","Backup"]];
+const TABS_T=[["home","Home"],["members","Members"],["pay","Payments"],["families","Family files"],["chat","Chat"],["expenses","Money out"],["updates","Board"],["flyer","Flyer"],["log","Log book"],["backup","Backup"]];
 const TABS_M=[["home","My account"],["spend","The fund"],["chat","Chat"],["profile","Family file"],["note","Message treasurer"]];
 
 function needPin(){
@@ -696,7 +703,7 @@ function togglePin(){
 }
 function tryPin(){
   const p=document.getElementById("pinBox").value;
-  if(p===DB.pin){ authed=true; mode="treasurer"; tab="home"; saveSess(); closeModal(); render(); }
+  if(p===DB.pin){ authed=true; mode="treasurer"; tab="home"; saveSess(); trackLogin("Treasurer","treasurer"); closeModal(); render(); }
   else alert("Wrong PIN");
 }
 function forgotPin(){
@@ -810,8 +817,10 @@ function render(){
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
     if(tab==="updates") v.innerHTML=treasUpdatesView();
     if(tab==="flyer") v.innerHTML=flyerView(st);
+    if(tab==="log") v.innerHTML=logBookView();
     if(tab==="backup") v.innerHTML=backupView();
   }
+  try{ trackPage(); }catch(e){}
 }
 
 function memberHome(st){
@@ -972,6 +981,7 @@ function confirmSignCode(){
   who=m.name;
   window._signId="";
   saveSess();
+  trackLogin(m.name,"member");
   refreshLiveBook(false);
   render();
 }
@@ -2946,6 +2956,110 @@ function showFamily(id){
   openModal(`<h3>${esc(m.name)}</h3>
     <p class="changed">Latest file</p>${block("Current",cur,pe)}
     ${hist.length?`<p>Previous files</p>`+hist.slice().reverse().map((h,i)=>block("Old "+(i+1),h,h.people)).join(""):"<p>No earlier file.</p>"}`);
+}
+
+
+const AREA_NAME={
+  "member:home":"My account","member:spend":"The fund","member:chat":"Chat","member:profile":"Family file","member:note":"Message treasurer",
+  "treasurer:home":"Treasurer home","treasurer:members":"Members","treasurer:pay":"Payments","treasurer:families":"Family files",
+  "treasurer:chat":"Chat","treasurer:expenses":"Money out","treasurer:updates":"Board","treasurer:flyer":"Flyer","treasurer:log":"Log book","treasurer:backup":"Backup",
+  "gate":"Sign-in page"
+};
+function ensureLog(){
+  DB.logins=DB.logins||[];
+  DB.visits=DB.visits||[];
+}
+function logStamp(at){
+  const d=new Date(at||Date.now());
+  return d.toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+function trackLogin(name, role){
+  ensureLog();
+  DB.logins.push({who:name||"Unknown", role:role||"member", at:new Date().toISOString()});
+  DB.logins=DB.logins.slice(-250);
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+  pushActivity({kind:"login", who:name||"Unknown", role:role||"member", area:"Sign in", at:new Date().toISOString()});
+}
+function trackPage(){
+  ensureLog();
+  const area = !who && mode==="member" ? "gate" : (mode+":"+tab);
+  const whoNow = mode==="treasurer" ? ((DB.settings&&DB.settings.treasurer&&DB.settings.treasurer.name)||"Treasurer") : (who||"Guest");
+  const key=whoNow+"|"+area;
+  const now=Date.now();
+  if(window._lastVisit===key && now-(window._lastVisitAt||0)<20000) return;
+  window._lastVisit=key; window._lastVisitAt=now;
+  DB.visits.push({who:whoNow, role:mode, area:area, at:new Date().toISOString()});
+  DB.visits=DB.visits.slice(-400);
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+  pushActivity({kind:"visit", who:whoNow, role:mode, area:AREA_NAME[area]||area, at:new Date().toISOString()});
+}
+function pushActivity(row){
+  try{
+    if(!FB.db) return;
+    FB.db.collection("activity").add(row).catch(()=>{});
+  }catch(e){}
+}
+function loadActivity(cb){
+  if(!FB.db){ cb([]); return; }
+  FB.db.collection("activity").orderBy("at","desc").limit(300).get().then(snap=>{
+    cb(snap.docs.map(d=>d.data()));
+  }).catch(()=>cb([]));
+}
+function logBookView(){
+  ensureLog();
+  if(!window._actLoaded){
+    window._actLoaded=true;
+    loadActivity(rows=>{ window._cloudActs=rows||[]; if(tab==="log") render(); });
+  }
+  const cloud=window._cloudActs||[];
+  const logins=(DB.logins||[]).concat(cloud.filter(r=>r.kind==="login")).sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  const visits=(DB.visits||[]).map(v=>({who:v.who, role:v.role, area:AREA_NAME[v.area]||v.area, at:v.at})).concat(cloud.filter(r=>r.kind==="visit"));
+  const seen=new Set();
+  const uniqL=[];
+  logins.forEach(r=>{ const k=(r.who||"")+"|"+(r.at||""); if(seen.has(k)) return; seen.add(k); uniqL.push(r); });
+  const seenV=new Set();
+  const uniqV=[];
+  visits.forEach(r=>{ const k=(r.who||"")+"|"+(r.area||"")+"|"+(r.at||"").slice(0,16); if(seenV.has(k)) return; seenV.add(k); uniqV.push(r); });
+  uniqV.sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  const byArea={};
+  uniqV.forEach(r=>{ byArea[r.area]=(byArea[r.area]||0)+1; });
+  const rank=Object.entries(byArea).sort((a,b)=>b[1]-a[1]);
+  const maxA=rank.length?rank[0][1]:1;
+  const byPerson={};
+  uniqL.forEach(r=>{ byPerson[r.who]=(byPerson[r.who]||0)+1; });
+  const people=Object.entries(byPerson).sort((a,b)=>b[1]-a[1]);
+  const days={};
+  uniqL.forEach(r=>{ const day=String(r.at||"").slice(0,10)||"unknown"; days[day]=(days[day]||0)+1; });
+  const dayRows=Object.entries(days).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14);
+  const maxD=dayRows.length?Math.max(...dayRows.map(x=>x[1])):1;
+  const bars=rank.slice(0,8).map(([name,n])=>`<div class="log-row"><span>${esc(name)}</span><i style="width:${Math.round(n/maxA*100)}%"></i><b>${n}</b></div>`).join("")||"<p>No page visits yet.</p>";
+  const dayBars=dayRows.map(([d,n])=>`<div class="log-col" title="${esc(d)} · ${n}"><i style="height:${Math.max(8,Math.round(n/maxD*90))}px"></i><small>${esc(d.slice(5))}</small></div>`).join("")||"<p>No logins yet.</p>";
+  const loginRows=uniqL.slice(0,40).map(r=>`<tr><td>${esc(logStamp(r.at))}</td><td>${esc(r.who)}</td><td>${esc(r.role||"")}</td></tr>`).join("")||"<tr><td colspan=3>No logins recorded yet.</td></tr>";
+  const visitRows=uniqV.slice(0,50).map(r=>`<tr><td>${esc(logStamp(r.at))}</td><td>${esc(r.who)}</td><td>${esc(r.area)}</td></tr>`).join("")||"<tr><td colspan=3>No pages opened yet.</td></tr>";
+  const personRows=people.slice(0,20).map(([n,c],i)=>`<tr><td>${i+1}</td><td>${esc(n)}</td><td>${c}</td></tr>`).join("")||"<tr><td colspan=3>None yet.</td></tr>";
+  return `<div class="card"><h3>Log book</h3>
+    <p>Only the treasurer sees this. It records who signed in, when, and which pages they opened.</p>
+    <div class="stats">
+      <div class="stat"><b>${uniqL.length}</b><span>Logins kept</span></div>
+      <div class="stat"><b>${people.length}</b><span>People</span></div>
+      <div class="stat"><b>${uniqV.length}</b><span>Pages opened</span></div>
+      <div class="stat"><b>${rank[0]?esc(rank[0][0]):"—"}</b><span>Most visited</span></div>
+    </div>
+    <h3>Logins by day</h3>
+    <div class="log-days">${dayBars}</div>
+    <h3>Most visited areas</h3>
+    <div class="log-bars">${bars}</div>
+    <button class="btn ghost" onclick="window._actLoaded=false;render()">Refresh log</button>
+  </div>
+  <div class="card"><h3>Who signed in</h3>
+    <table><thead><tr><th>When</th><th>Name</th><th>Side</th></tr></thead><tbody>${loginRows}</tbody></table>
+  </div>
+  <div class="card"><h3>What was opened</h3>
+    <table><thead><tr><th>When</th><th>Name</th><th>Area</th></tr></thead><tbody>${visitRows}</tbody></table>
+  </div>
+  <div class="card"><h3>Most active people</h3>
+    <table><thead><tr><th>#</th><th>Name</th><th>Logins</th></tr></thead><tbody>${personRows}</tbody></table>
+  </div>`;
 }
 
 function bootCine(){
