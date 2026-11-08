@@ -728,7 +728,6 @@ function netPosition(m){
   return {paid, share, benefits, exitCosts, credits, net};
 }
 function accountBlock(m){
-  if(!exitShown()) return "";
   const n=netPosition(m);
   const lines=expenseBreakdownHtml(m);
   const creds=(m.credits||[]).map(c=>`<div style="display:flex;justify-content:space-between;font-size:.85rem"><span>${esc(c.date||"")} · ${esc(c.item||"Credit")}</span><b>${ugx(c.amount)}</b></div>`).join("");
@@ -1012,7 +1011,7 @@ function memberHome(st){
         <button class="btn gold" onclick="showStmt(${found.m.id})">My statement</button>
         <button class="btn ghost" onclick="downloadMemberStmt(${found.m.id})">Download statement</button>
       </div>
-      ${exitShown()?accountBlock(found.m):""}
+      ${accountBlock(found.m)}
     </div>
     ${updatesBox(false)}
     ${activitiesView(false)}
@@ -1620,10 +1619,9 @@ function showStmt(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
   const cl=classify(m,new Date());
   const np=netPosition(m);
-  const showExit = mode==="treasurer" || (DB.settings && DB.settings.exitVisible!==false);
   openModal(`<h3>Statement · ${esc(m.name)}</h3>
     <p>Role ${esc(m.role)} · phone ${esc(m.phone||"—")} · paid ${ugx(m.paid)} · remaining ${ugx(cl.remaining)}</p>
-    ${showExit?`<p>Interest/donations ${ugx(np.credits)} · Expense share ${ugx(np.share)} · Benefits ${ugx(np.benefits)} · Exit costs ${ugx(np.exitCosts)} · <b>Net ${ugx(np.net)}</b></p>`:""}
+    <p>Interest/donations ${ugx(np.credits)} · Expense share ${ugx(np.share)} · Benefits ${ugx(np.benefits)} · Exit costs ${ugx(np.exitCosts)} · <b>Net ${ugx(np.net)}</b></p>
     <div class="date-pick">
       <label>From
         <span class="date-wrap">
@@ -3274,7 +3272,6 @@ function loadActivity(cb){
 
 function exitLedgerView(){
   const q=(window._exitQ||"").toLowerCase();
-  const show=exitShown();
   const list=(DB.members||[]).filter(m=>m.active && !m.exited)
     .filter(m=>!q || (m.name||"").toLowerCase().includes(q) || (m.phone||"").includes(q))
     .slice().sort((a,b)=>a.name.localeCompare(b.name));
@@ -3300,11 +3297,7 @@ function exitLedgerView(){
   }).join("")||"<p>No active members match.</p>";
   return `<div class="card"><h3>Exit ledger</h3>
     <p>One place for active members. Expense shares, benefits, exit costs and interest/donations entered here update each member’s ledger. The same records appear on the member ⋮ menu.</p>
-    <div class="row" style="align-items:center;margin:8px 0">
-      <span>${show?"Members currently SEE the exit position":"Members currently do NOT see the exit position"}</span>
-      <button class="btn ${show?"gold":"ghost"}" type="button" onclick="toggleExitVisible()">${show?"Hide from members":"Show to members"}</button>
-    </div>
-    <p id="exitVisMsg" style="font-size:.85rem">${show?"Status: visible on member accounts.":"Status: hidden on member accounts."}</p>
+
     <label>Search active member</label>
     <input id="exitSearch" placeholder="Type a name" value="${esc(window._exitQ||"")}" oninput="window._exitQ=this.value;render()"/>
     <h3 style="margin-top:14px">Add interest or donation</h3>
