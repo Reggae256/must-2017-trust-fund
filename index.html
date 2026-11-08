@@ -336,9 +336,9 @@ const SEED_MEMBERS = [{"name": "Bankunda Aron", "fee": 10000, "active": true, "p
 const SEED_EXPENSES = [
   {item:"Registration and opening account", date:"2025-04-01", amount:528200, by:"Executive", seen:true},
   {item:"Transport x2 mobile banking / FlexiPay", date:"2025-04-15", amount:16000, by:"Treasurer", seen:true},
-  {item:"Godwin's wedding party", date:"2025-08-23", amount:250000, by:"Godwin", seen:true, personal:true, category:"Party"},
-  {item:"Refund to Julius Turyahabwe", date:"2026-05-05", amount:47500, by:"Julius", seen:true, personal:true, category:"Other"},
-  {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias", seen:true, personal:true, category:"Burial"}
+  {item:"Godwin's wedding party", date:"2025-08-23", amount:250000, by:"Godwin", seen:true, category:"Party"},
+  {item:"Refund to Julius Turyahabwe", date:"2026-05-05", amount:47500, by:"Julius Turyahabwe", seen:true, refund:true, category:"Refund"},
+  {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias", seen:true, category:"Burial"}
 ];
 const START=new Date(2025,0,1), MONTHLY=10000, GRACE=4, FIRST_DEPOSIT=100000;
 const PAY_CODES={
@@ -670,7 +670,7 @@ function expenseShareAmount(e){
   return Math.round((Number(e.amount)||0)/n);
 }
 function expenseAppliesTo(e,m){
-  if(!e || !m || e.personal) return false;
+  if(!e || !m || e.personal || e.refund) return false;
   if(Array.isArray(e.allocatedTo) && e.allocatedTo.length){
     return e.allocatedTo.some(id=>String(id)===String(m.id));
   }
@@ -2502,6 +2502,7 @@ function openExitCalc(id){
   openModal(`<h3>Exit calculation · ${esc(m.name)}</h3>
     <p>Total contributions <b>${ugx(n.paid)}</b></p>
     <p>Share of association expenses while active <b>${ugx(n.share)}</b></p>
+    <p style="font-size:.8rem;color:var(--muted)">Imported from association expenses, excluding refunds.</p>
     <div style="margin:4px 0 8px;padding-left:8px;border-left:2px solid var(--line)">${expenseBreakdownHtml(m)}</div>
     <p>Interest / donations <b>${ugx(n.credits)}</b></p>
     <p>Benefits already received <b>${ugx(n.benefits)}</b></p>
@@ -2922,7 +2923,8 @@ function ensureDocs(){
   (DB.expenses||[]).forEach(e=>{
     if(!e.category) e.category=expenseCategory(e);
     const nm=String(e.item||"").toLowerCase();
-    if(/godwin/.test(nm) || /julius/.test(nm) || /mathias/.test(nm)) e.personal=true;
+    if(/refund/.test(nm)){ e.refund=true; e.personal=false; e.category=e.category||"Refund"; }
+    if(/godwin|mathias|party|burial/.test(nm) && !e.refund) e.personal=false;
     if(!e.allocatedTo){
       e.allocatedTo=(DB.members||[]).filter(m=>m.active).map(m=>m.id);
       e.activeCount=e.activeCount||e.allocatedTo.length||1;
@@ -3309,6 +3311,57 @@ function interestRuns(){
   });
   return Object.values(map);
 }
+
+function isRefund(e){
+  return !!(e && (e.refund || /refund/i.test(e.item||"") || e.category==="Refund"));
+}
+
+function addRefund(){
+  if(!needPin()) return;
+  const by=(document.getElementById("rfBy").value||"").trim();
+  const item=(document.getElementById("rfItem").value||"").trim()||("Refund to "+by);
+  const amount=Number(document.getElementById("rfAmt").value||0);
+  const date=(document.getElementById("rfDate")||{}).value||new Date().toISOString().slice(0,10);
+  if(!by||amount<=0){ alert("Need the account holder and amount"); return; }
+  DB.expenses=DB.expenses||[];
+  DB.expenses.push({
+    item, amount, by, date, seen:true, refund:true, personal:false, category:"Refund",
+    share:0, activeCount:0, allocatedTo:[],
+    enteredBy:treasurerName(), enteredAt:new Date().toISOString()
+  });
+  save();
+  alert("Refund recorded. It is on the association list only, not on exit calc.");
+  render();
+}
+function openRefundList(){
+  if(!needPin()) return;
+  const rows=(DB.expenses||[]).map((e,i)=>({e,i})).filter(x=>isRefund(x.e));
+  const body=rows.map(({e,i})=>`<div class="card" style="margin:0 0 8px">
+    <b>${esc(e.item||"Refund")}</b>
+    <div style="font-size:.85rem">${esc(e.date||"—")} · ${ugx(e.amount)} · C/O ${esc(e.by||"—")}</div>
+    <button class="btn ghost" style="margin-top:6px" onclick="editExpense(${i})">Edit</button>
+  </div>`).join("")||"<p>No refunds yet.</p>";
+  openModal(`<h3>Refund list</h3>
+    <p>Association expense only. These do not go into any member’s exit calc.</p>
+    ${body}
+    <button class="btn ghost" onclick="closeModal()">Close</button>`);
+}
+function openAssocExpenses(){
+
+  if(!needPin()) return;
+  const rows=(DB.expenses||[]).map((e,i)=>({e,i})).filter(x=>!x.e.personal);
+  const body=rows.map(({e,i})=>`<div class="card" style="margin:0 0 8px">
+    <b>${esc(e.category||expenseCategory(e))}</b> · ${esc(e.item||"")}
+    ${isRefund(e)?'<span class="pill wait">Refund · not in exit calc</span>':''}
+    <div style="font-size:.85rem">${esc(e.date||"—")} · ${ugx(e.amount)} · C/O ${esc(e.by||"—")}
+      ${isRefund(e)?"":` · share ${ugx(expenseShareAmount(e))}`}</div>
+    <button class="btn ghost" style="margin-top:6px" onclick="editExpense(${i})">Edit</button>
+  </div>`).join("")||"<p>No association expenses yet.</p>";
+  openModal(`<h3>Association expenses</h3>
+    <p>Editable list. Refunds are included here with the account holder as C/O. Exit calc uses this list excluding refunds.</p>
+    ${body}
+    <button class="btn ghost" onclick="closeModal()">Close</button>`);
+}
 function editExpense(i){
   if(!needPin()) return;
   const e=DB.expenses[i]; if(!e) return;
@@ -3319,7 +3372,9 @@ function editExpense(i){
     <label>Description</label><input id="edExItem" value="${esc(e.item||"")}"/>
     <label>Total amount</label><input id="edExAmt" type="number" value="${Number(e.amount||0)}"/>
     <label>Date</label><input id="edExDate" type="date" value="${esc(e.date||"")}"/>
+    <label>C/O · account holder</label><input id="edExBy" value="${esc(e.by||"")}"/>
     <label>Active members at the time</label><input id="edExN" type="number" value="${Number(e.activeCount||activeMembers().length||1)}"/>
+    <label style="margin-top:8px"><input id="edExRefund" type="checkbox" ${isRefund(e)?"checked":""}/> Refund — keep on association list, exclude from exit calc</label>
     <div class="row" style="margin-top:10px">
       <button class="btn gold" onclick="saveExpense(${i})">Save</button>
       <button class="btn danger" onclick="delExpense(${i})">Delete</button>
@@ -3333,18 +3388,21 @@ function saveExpense(i){
   e.item=(document.getElementById("edExItem").value||"").trim()||e.item;
   e.amount=Number(document.getElementById("edExAmt").value||0);
   e.date=(document.getElementById("edExDate")||{}).value||e.date;
+  e.by=(document.getElementById("edExBy").value||"").trim();
+  e.refund=!!(document.getElementById("edExRefund")||{}).checked;
+  if(e.refund){ e.personal=false; e.category="Refund"; }
   e.activeCount=Math.max(1, Number(document.getElementById("edExN").value||e.activeCount||1));
-  e.share=Math.round(e.amount/e.activeCount);
+  e.share=e.refund?0:Math.round(e.amount/e.activeCount);
   if(!e.allocatedTo || !e.allocatedTo.length) e.allocatedTo=activeMembers().map(m=>m.id);
   e.editedBy=treasurerName();
   e.editedAt=new Date().toISOString();
-  save(); closeModal(); render();
+  save(); render(); if(isRefund(DB.expenses[i]||{})) openRefundList(); else openAssocExpenses();
 }
 function delExpense(i){
   if(!needPin()) return;
   if(!confirm("Delete this association expense?")) return;
   DB.expenses.splice(i,1);
-  save(); closeModal(); render();
+  save(); render(); if(isRefund(DB.expenses[i]||{})) openRefundList(); else openAssocExpenses();
 }
 function editInterest(enc){
   if(!needPin()) return;
@@ -3472,13 +3530,16 @@ function exitLedgerView(){
     <label>Amount per member</label><input id="shExitAmt" type="number"/>
     ${(DB.sharedExitCosts||[]).map((c,i)=>`<div class="row" style="justify-content:space-between"><span>${esc(c.item)} · ${ugx(c.amount)}</span><button class="btn danger" onclick="delSharedExit(${i})">✕</button></div>`).join("")}
     <button class="btn gold" style="margin-top:8px" onclick="addSharedExit()">Add exit cost to all active</button>
-    <h3 style="margin-top:14px">Association expenses already in the books</h3>
-    <p style="font-size:.85rem">These are already captured, including registration and opening account, and transport for mobile banking / FlexiPay. Edit any line, or add a new one above.</p>
-    ${(DB.expenses||[]).map((e,i)=>({e,i})).filter(x=>!x.e.personal).map(({e,i})=>`<div class="card" style="margin:0 0 8px">
-      <b>${esc(e.category||expenseCategory(e))}</b> · ${esc(e.item||"")}
-      <div style="font-size:.85rem">${esc(e.date||"—")} · total ${ugx(e.amount)} · share ${ugx(expenseShareAmount(e))} · ${e.activeCount||"—"} members</div>
-      <button class="btn ghost" style="margin-top:6px" onclick="editExpense(${i})">Edit</button>
-    </div>`).join("")||"<p>None yet.</p>"}
+    <h3 style="margin-top:14px">Refund fill-in</h3>
+    <p style="font-size:.85rem">A refund is an association expense, with the account holder as C/O. It is not charged to other members and does not appear on exit calc.</p>
+    <label>Account holder · C/O</label><input id="rfBy" placeholder="Name of member refunded"/>
+    <label>Description</label><input id="rfItem" placeholder="Refund"/>
+    <label>Amount</label><input id="rfAmt" type="number"/>
+    <label>Date</label><input id="rfDate" type="date" value="${new Date().toISOString().slice(0,10)}"/>
+    <div class="row" style="margin-top:8px">
+      <button class="btn gold" onclick="addRefund()">Add refund</button>
+      <button class="btn ghost" onclick="openRefundList()">Open refund list</button>
+    </div>
     <h3 style="margin-top:14px">Interest / donations already shared</h3>
     ${interestRuns().map(r=>`<div class="card" style="margin:0 0 8px">
       <b>${esc(r.item)}</b>
