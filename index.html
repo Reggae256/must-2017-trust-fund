@@ -356,7 +356,7 @@ const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="m
 
 function defaultSettings(){
   return {
-    openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT, exitVisible:true,
+    openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT, exitVisible:false,
     tickerText:"",
     chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true,star:true,fwd:true},
 
@@ -867,6 +867,7 @@ function toggleMenu(){
 }
 function setUi(k,v){
   DB.settings=DB.settings||defaultSettings();
+  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=false;
   DB.settings[k]=v; save(); applyUi(); toggleMenu(); toggleMenu();
 }
 function render(){
@@ -1833,6 +1834,7 @@ function treasurerDisplayName(){
   const m=treasurerMember();
   if(m){
     DB.settings=DB.settings||defaultSettings();
+  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=false;
     DB.settings.treasurer=DB.settings.treasurer||{};
     DB.settings.treasurer.name=m.name;
     return m.name;
@@ -2901,6 +2903,7 @@ if(location.hash.startsWith("#reset=")){
 
 function ensureDocs(){
   DB.settings=DB.settings||defaultSettings();
+  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=false;
   (DB.expenses||[]).forEach(e=>{
     if(!e.allocatedTo){
       e.allocatedTo=(DB.members||[]).filter(m=>m.active).map(m=>m.id);
@@ -3309,7 +3312,7 @@ function exitLedgerView(){
   ${rows}`;
 }
 function exitShown(){
-  return !(DB.settings && DB.settings.exitVisible===false);
+  return !!(DB.settings && DB.settings.exitVisible===true);
 }
 function toggleExitVisible(){
   if(!authed){ alert("Sign in as treasurer with your PIN first, then tap the button again."); needPin(); return; }
