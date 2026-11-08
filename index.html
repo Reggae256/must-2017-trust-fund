@@ -400,6 +400,11 @@ function load(){
     if(raw){
       const db=JSON.parse(raw);
       db.settings = Object.assign(defaultSettings(), db.settings||{});
+      try{
+        const ev=localStorage.getItem("must2017exitVisible");
+        if(ev==="1") db.settings.exitVisible=true;
+        if(ev==="0") db.settings.exitVisible=false;
+      }catch(e){}
       db.notices = db.notices||[];
       db.resets = db.resets||[];
       db.pending = db.pending||[];
@@ -475,7 +480,10 @@ function listenCloud(){
     }
     if(treasHere && cat && lat && cat<=lat){ render(); return; }
     FB.skip=true;
+    const keepVis=exitShown();
     incoming.settings=Object.assign(defaultSettings(), incoming.settings||{});
+    if(typeof (incoming.settings||{}).exitVisible!=="boolean") incoming.settings.exitVisible=keepVis;
+    else try{ localStorage.setItem("must2017exitVisible", incoming.settings.exitVisible?"1":"0"); }catch(e){}
     incoming.notices=incoming.notices||[];
     incoming.resets=incoming.resets||[];
     incoming.pending=incoming.pending||[];
@@ -3260,7 +3268,7 @@ function loadActivity(cb){
 
 function exitLedgerView(){
   const q=(window._exitQ||"").toLowerCase();
-  const show=DB.settings.exitVisible!==false;
+  const show=exitShown();
   const list=(DB.members||[]).filter(m=>m.active && !m.exited)
     .filter(m=>!q || (m.name||"").toLowerCase().includes(q) || (m.phone||"").includes(q))
     .slice().sort((a,b)=>a.name.localeCompare(b.name));
@@ -3312,14 +3320,23 @@ function exitLedgerView(){
   ${rows}`;
 }
 function exitShown(){
-  return !!(DB.settings && DB.settings.exitVisible===true);
+  if(DB.settings && typeof DB.settings.exitVisible==="boolean") return DB.settings.exitVisible===true;
+  try{
+    const s=localStorage.getItem("must2017exitVisible");
+    if(s==="1") return true;
+    if(s==="0") return false;
+  }catch(e){}
+  return false;
 }
 function toggleExitVisible(){
   if(!authed){ alert("Sign in as treasurer with your PIN first, then tap the button again."); needPin(); return; }
   DB.settings = DB.settings || {};
   DB.settings.exitVisible = !exitShown();
   DB.updatedAt=Date.now();
-  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+  try{
+    localStorage.setItem("must2017exitVisible", DB.settings.exitVisible?"1":"0");
+    localStorage.setItem(KEY, JSON.stringify(DB));
+  }catch(e){}
   if(typeof pushCloud==="function") pushCloud();
   const msg = DB.settings.exitVisible===false
     ? "Hidden. Member accounts will not show the exit position."
