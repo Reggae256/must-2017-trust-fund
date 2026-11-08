@@ -356,7 +356,7 @@ const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="m
 
 function defaultSettings(){
   return {
-    openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT,
+    openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT, exitVisible:true,
     tickerText:"",
     chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true,star:true,fwd:true},
 
@@ -714,7 +714,7 @@ function netPosition(m){
   return {paid, share, benefits, exitCosts, credits, net};
 }
 function accountBlock(m){
-  if(DB.settings && DB.settings.exitVisible===false) return "";
+  if(!DB.settings || DB.settings.exitVisible===false) return "";
   const n=netPosition(m);
   const lines=expenseBreakdownHtml(m);
   const creds=(m.credits||[]).map(c=>`<div style="display:flex;justify-content:space-between;font-size:.85rem"><span>${esc(c.date||"")} · ${esc(c.item||"Credit")}</span><b>${ugx(c.amount)}</b></div>`).join("");
@@ -1605,9 +1605,10 @@ function showStmt(id){
   const m=DB.members.find(x=>x.id===id); if(!m) return;
   const cl=classify(m,new Date());
   const np=netPosition(m);
+  const showExit = mode==="treasurer" || (DB.settings && DB.settings.exitVisible!==false);
   openModal(`<h3>Statement · ${esc(m.name)}</h3>
     <p>Role ${esc(m.role)} · phone ${esc(m.phone||"—")} · paid ${ugx(m.paid)} · remaining ${ugx(cl.remaining)}</p>
-    <p>Interest/donations ${ugx(np.credits)} · Expense share ${ugx(np.share)} · Benefits ${ugx(np.benefits)} · Exit costs ${ugx(np.exitCosts)} · <b>Net ${ugx(np.net)}</b></p>
+    ${showExit?`<p>Interest/donations ${ugx(np.credits)} · Expense share ${ugx(np.share)} · Benefits ${ugx(np.benefits)} · Exit costs ${ugx(np.exitCosts)} · <b>Net ${ugx(np.net)}</b></p>`:""}
     <div class="date-pick">
       <label>From
         <span class="date-wrap">
@@ -3308,8 +3309,13 @@ function exitLedgerView(){
 }
 function toggleExitVisible(){
   if(!needPin()) return;
-  DB.settings.exitVisible = DB.settings.exitVisible===false;
-  save(); render();
+  DB.settings = DB.settings || {};
+  const next = DB.settings.exitVisible===false;
+  DB.settings.exitVisible = next;
+  localStorage.setItem(KEY, JSON.stringify(DB));
+  if(typeof pushCloud==="function") pushCloud();
+  alert(next ? "Members can now see their exit position." : "Hidden. Members will not see their exit position.");
+  render();
 }
 function periodContrib(m, from, to){
   const tx=(m.tx||[]).filter(x=>Number(x.amount)>0);
