@@ -744,7 +744,7 @@ function loadSess(){
   }catch(e){}
 }
 loadSess();
-const TABS_T=[["home","Home"],["members","Members"],["pay","Payments"],["families","Family files"],["chat","Chat"],["expenses","Money out"],["updates","Board"],["flyer","Flyer"],["log","Log book"],["backup","Backup"]];
+const TABS_T=[["home","Home"],["members","Members"],["pay","Payments"],["families","Family files"],["chat","Chat"],["expenses","Money out"],["exit","Exit ledger"],["updates","Board"],["flyer","Flyer"],["log","Log book"],["backup","Backup"]];
 const TABS_M=[["home","My account"],["spend","The fund"],["chat","Chat"],["profile","Family file"],["note","Message treasurer"]];
 
 function needPin(){
@@ -882,6 +882,7 @@ function render(){
     if(tab==="expenses") v.innerHTML=expView(collected,spent);
     if(tab==="updates") v.innerHTML=treasUpdatesView();
     if(tab==="flyer") v.innerHTML=flyerView(st);
+    if(tab==="exit") v.innerHTML=exitLedgerView();
     if(tab==="log") v.innerHTML=logBookView();
     if(tab==="backup") v.innerHTML=backupView();
   }
@@ -3207,6 +3208,41 @@ function loadActivity(cb){
   FB.db.collection("activity").orderBy("at","desc").limit(300).get().then(snap=>{
     cb(snap.docs.map(d=>d.data()));
   }).catch(()=>cb([]));
+}
+
+function exitLedgerView(){
+  const rows=(DB.members||[]).slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>{
+    ensureExtras(m);
+    const n=netPosition(m);
+    const st=m.exited?"Exited":(m.active?"Active":"Inactive");
+    const stCls=m.exited?"no":(m.active?"ok":"wait");
+    return `<div class="card" style="margin:0 0 10px">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <b>${esc(m.name)}</b>
+          <span class="pill ${stCls}" style="margin-left:6px">${st}</span>
+        </div>
+        <div style="text-align:right"><b>${ugx(n.net)}</b><div style="font-size:.75rem;color:var(--muted)">net payable</div></div>
+      </div>
+      <p style="margin:8px 0 4px;font-size:.9rem">Contributed ${ugx(n.paid)} · Expense share ${ugx(n.share)} · Benefits ${ugx(n.benefits)} · Exit costs ${ugx(n.exitCosts)}</p>
+      <div class="row">
+        <button class="btn ghost" onclick="openBenefits(${m.id})">Benefits</button>
+        <button class="btn gold" onclick="openExitCalc(${m.id})">Exit calc</button>
+        <button class="btn ghost" onclick="showStmt(${m.id})">Statement</button>
+      </div>
+    </div>`;
+  }).join("")||"<p>No members yet.</p>";
+  const active=(DB.members||[]).filter(m=>m.active&&!m.exited).length;
+  const exited=(DB.members||[]).filter(m=>m.exited).length;
+  return `<div class="card"><h3>Exit ledger</h3>
+    <p>One place for every member’s net position. Benefits and exit costs entered here are the same records used on the member ⋮ menu. Net = contributions − expense share − benefits − exit costs.</p>
+    <div class="stats">
+      <div class="stat"><b>${(DB.members||[]).length}</b><span>Members</span></div>
+      <div class="stat"><b>${active}</b><span>Active</span></div>
+      <div class="stat"><b>${exited}</b><span>Exited</span></div>
+    </div>
+  </div>
+  ${rows}`;
 }
 function logBookView(){
   ensureLog();
