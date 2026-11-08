@@ -714,7 +714,7 @@ function netPosition(m){
   return {paid, share, benefits, exitCosts, credits, net};
 }
 function accountBlock(m){
-  if(!DB.settings || DB.settings.exitVisible===false) return "";
+  if(!exitShown()) return "";
   const n=netPosition(m);
   const lines=expenseBreakdownHtml(m);
   const creds=(m.credits||[]).map(c=>`<div style="display:flex;justify-content:space-between;font-size:.85rem"><span>${esc(c.date||"")} · ${esc(c.item||"Credit")}</span><b>${ugx(c.amount)}</b></div>`).join("");
@@ -997,7 +997,7 @@ function memberHome(st){
         <button class="btn gold" onclick="showStmt(${found.m.id})">My statement</button>
         <button class="btn ghost" onclick="downloadMemberStmt(${found.m.id})">Download statement</button>
       </div>
-      ${accountBlock(found.m)}
+      ${exitShown()?accountBlock(found.m):""}
     </div>
     ${updatesBox(false)}
     ${activitiesView(false)}
@@ -3284,9 +3284,10 @@ function exitLedgerView(){
   return `<div class="card"><h3>Exit ledger</h3>
     <p>One place for active members. Expense shares, benefits, exit costs and interest/donations entered here update each member’s ledger. The same records appear on the member ⋮ menu.</p>
     <div class="row" style="align-items:center;margin:8px 0">
-      <span>Members can see their exit position</span>
-      <button class="btn ${show?"gold":"ghost"}" onclick="toggleExitVisible()">${show?"Visible to members":"Hidden from members"}</button>
+      <span>${show?"Members currently SEE the exit position":"Members currently do NOT see the exit position"}</span>
+      <button class="btn ${show?"gold":"ghost"}" type="button" onclick="toggleExitVisible()">${show?"Hide from members":"Show to members"}</button>
     </div>
+    <p id="exitVisMsg" style="font-size:.85rem">${show?"Status: visible on member accounts.":"Status: hidden on member accounts."}</p>
     <label>Search active member</label>
     <input id="exitSearch" placeholder="Type a name" value="${esc(window._exitQ||"")}" oninput="window._exitQ=this.value;render()"/>
     <h3 style="margin-top:14px">Add interest or donation</h3>
@@ -3307,14 +3308,22 @@ function exitLedgerView(){
   </div>
   ${rows}`;
 }
+function exitShown(){
+  return !(DB.settings && DB.settings.exitVisible===false);
+}
 function toggleExitVisible(){
-  if(!needPin()) return;
+  if(!authed){ alert("Sign in as treasurer with your PIN first, then tap the button again."); needPin(); return; }
   DB.settings = DB.settings || {};
-  const next = DB.settings.exitVisible===false;
-  DB.settings.exitVisible = next;
-  localStorage.setItem(KEY, JSON.stringify(DB));
+  DB.settings.exitVisible = !exitShown();
+  DB.updatedAt=Date.now();
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
   if(typeof pushCloud==="function") pushCloud();
-  alert(next ? "Members can now see their exit position." : "Hidden. Members will not see their exit position.");
+  const msg = DB.settings.exitVisible===false
+    ? "Hidden. Member accounts will not show the exit position."
+    : "Visible. Member accounts will show the exit position.";
+  const box=document.getElementById("exitVisMsg");
+  if(box) box.textContent=msg;
+  alert(msg);
   render();
 }
 function periodContrib(m, from, to){
