@@ -646,6 +646,7 @@ function ensureExtras(m){
   if(!m) return m;
   m.benefits=m.benefits||[];
   m.exitCosts=m.exitCosts||[];
+  m.credits=m.credits||[];
   return m;
 }
 function expenseShareAmount(e){
@@ -673,24 +674,61 @@ function memberExitCostsTotal(m){
   ensureExtras(m);
   return (m.exitCosts||[]).reduce((s,c)=>s+Number(c.amount||0),0);
 }
+function memberCreditsTotal(m){
+  ensureExtras(m);
+  return (m.credits||[]).reduce((s,c)=>s+Number(c.amount||0),0);
+}
+function expenseCategory(e){
+  const c=String(e.category||"").trim();
+  if(c) return c;
+  const s=(e.item||"").toLowerCase();
+  if(/burial|funeral|death/.test(s)) return "Burial";
+  if(/party|wedding|function/.test(s)) return "Party";
+  if(/assoc|admin|account|registration|opening/.test(s)) return "Association";
+  return "Other";
+}
+function expenseBreakdown(m){
+  return (DB.expenses||[]).filter(e=>expenseAppliesTo(e,m)).map(e=>({
+    date:e.date||"", item:e.item||"Expense", category:expenseCategory(e),
+    share:expenseShareAmount(e), total:Number(e.amount||0)
+  }));
+}
+function expenseBreakdownHtml(m){
+  const rows=expenseBreakdown(m);
+  if(!rows.length) return "<p style=\"font-size:.85rem\">No allocated expenses yet.</p>";
+  const cats={};
+  rows.forEach(e=>{ (cats[e.category]=cats[e.category]||[]).push(e); });
+  return Object.entries(cats).map(([cat,list])=>{
+    const sum=list.reduce((s,e)=>s+e.share,0);
+    const items=list.map(e=>`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding-left:8px"><span>${esc(e.date)} · ${esc(e.item)}</span><b>${ugx(e.share)}</b></div>`).join("");
+    return `<div style="margin:6px 0"><b>${esc(cat)}</b> · ${ugx(sum)}${items}</div>`;
+  }).join("");
+}
 function netPosition(m){
   const paid=Number(m.paid||0);
   const share=memberExpenseShare(m);
   const benefits=memberBenefitsTotal(m);
   const exitCosts=memberExitCostsTotal(m);
-  const net=paid-share-benefits-exitCosts;
-  return {paid, share, benefits, exitCosts, net};
+  const credits=memberCreditsTotal(m);
+  const net=paid+credits-share-benefits-exitCosts;
+  return {paid, share, benefits, exitCosts, credits, net};
 }
 function accountBlock(m){
+  if(DB.settings && DB.settings.exitVisible===false) return "";
   const n=netPosition(m);
+  const lines=expenseBreakdownHtml(m);
+  const creds=(m.credits||[]).map(c=>`<div style="display:flex;justify-content:space-between;font-size:.85rem"><span>${esc(c.date||"")} · ${esc(c.item||"Credit")}</span><b>${ugx(c.amount)}</b></div>`).join("");
   return `<div class="card" style="margin-top:10px">
     <h3>Your association position</h3>
     <p>Total contributed <b>${ugx(n.paid)}</b></p>
+    <p>Interest / donations added <b>${ugx(n.credits)}</b></p>
+    ${creds}
     <p>Your share of association expenses <b>${ugx(n.share)}</b></p>
+    <div style="margin:6px 0 10px;padding-left:8px;border-left:2px solid var(--line)">${lines}</div>
     <p>Benefits received <b>${ugx(n.benefits)}</b></p>
     <p>Exit / transaction deductions <b>${ugx(n.exitCosts)}</b></p>
     <p>Current net balance <b>${ugx(n.net)}</b></p>
-    <p style="font-size:.8rem;color:var(--muted)">Net = contributions − expense share − benefits − exit costs. Treasurer controls expenses and benefits.</p>
+    <p style="font-size:.8rem;color:var(--muted)">Net = contributions + interest/donations − expense share − benefits − exit costs.</p>
   </div>`;
 }
 function classify(m, now){
@@ -1191,7 +1229,7 @@ function expRoll(list,canEdit){
   const rows=(list.length?list:[{date:"—",item:"No expenditure yet",amount:0,by:""}]);
   const body=rows.map((e,i)=>`<tr>
     <td>${esc(e.date||"—")}</td>
-    <td>${esc(e.item||"—")}${e.share?`<br><small>${e.activeCount||"—"} members · ${ugx(e.share)} each</small>`:""}</td>
+    <td>${esc(e.item||"—")}${e.share?`<br><small>${esc(e.category||expenseCategory(e))} · ${e.activeCount||"—"} members · ${ugx(e.share)} each</small>`:""}</td>
     <td>${esc(e.by||"—")}</td>
     <td>${ugx(e.amount)}</td>
     ${canEdit?`<td>
@@ -1569,7 +1607,7 @@ function showStmt(id){
   const np=netPosition(m);
   openModal(`<h3>Statement · ${esc(m.name)}</h3>
     <p>Role ${esc(m.role)} · phone ${esc(m.phone||"—")} · paid ${ugx(m.paid)} · remaining ${ugx(cl.remaining)}</p>
-    <p>Expense share ${ugx(np.share)} · Benefits ${ugx(np.benefits)} · Exit costs ${ugx(np.exitCosts)} · <b>Net ${ugx(np.net)}</b></p>
+    <p>Interest/donations ${ugx(np.credits)} · Expense share ${ugx(np.share)} · Benefits ${ugx(np.benefits)} · Exit costs ${ugx(np.exitCosts)} · <b>Net ${ugx(np.net)}</b></p>
     <div class="date-pick">
       <label>From
         <span class="date-wrap">
@@ -2386,6 +2424,9 @@ function expView(collected,spent){
     <h3>Money out</h3>
     <p>In ${ugx(collected)} · Out ${ugx(spent)} · Balance <b>${ugx(collected-spent)}</b></p>
     <label>Date</label><input id="exDate" type="date" value="${new Date().toISOString().slice(0,10)}"/>
+    <label>Category</label><select id="exCat">
+      <option>Burial</option><option>Party</option><option>Association</option><option>Other</option>
+    </select>
     <label>Description / expense block</label><input id="exItem" placeholder="e.g. Burial support, Party"/>
     <label>Total amount</label><input id="exAmt" type="number"/>
     <label>Number of active members at the time</label><input id="exActive" type="number" value="${n}"/>
@@ -2443,6 +2484,8 @@ function openExitCalc(id){
   openModal(`<h3>Exit calculation · ${esc(m.name)}</h3>
     <p>Total contributions <b>${ugx(n.paid)}</b></p>
     <p>Share of association expenses while active <b>${ugx(n.share)}</b></p>
+    <div style="margin:4px 0 8px;padding-left:8px;border-left:2px solid var(--line)">${expenseBreakdownHtml(m)}</div>
+    <p>Interest / donations <b>${ugx(n.credits)}</b></p>
     <p>Benefits already received <b>${ugx(n.benefits)}</b></p>
     <p>Exit / transaction costs <b>${ugx(n.exitCosts)}</b></p>
     <p style="font-size:1.1rem">Net payable <b>${ugx(n.net)}</b></p>
@@ -2521,10 +2564,11 @@ function addExp(){
   const date=(document.getElementById("exDate")||{}).value || new Date().toISOString().slice(0,10);
   const activeCount=Math.max(1, Number((document.getElementById("exActive")||{}).value||activeMembers().length||1));
   if(!item||amount<=0){ alert("Need item and amount"); return; }
+  const cat=(document.getElementById("exCat")||{}).value||"Other";
   const allocatedTo=activeMembers().map(m=>m.id);
   const share=Math.round(amount/activeCount);
   DB.expenses.push({
-    item, amount, by, date, seen:true,
+    item, amount, by, date, seen:true, category:cat,
     activeCount, share, allocatedTo,
     enteredBy:treasurerName(), enteredAt:new Date().toISOString()
   });
@@ -3211,39 +3255,100 @@ function loadActivity(cb){
 }
 
 function exitLedgerView(){
-  const rows=(DB.members||[]).slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>{
+  const q=(window._exitQ||"").toLowerCase();
+  const show=DB.settings.exitVisible!==false;
+  const list=(DB.members||[]).filter(m=>m.active && !m.exited)
+    .filter(m=>!q || (m.name||"").toLowerCase().includes(q) || (m.phone||"").includes(q))
+    .slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const rows=list.map(m=>{
     ensureExtras(m);
     const n=netPosition(m);
-    const st=m.exited?"Exited":(m.active?"Active":"Inactive");
-    const stCls=m.exited?"no":(m.active?"ok":"wait");
+    const by={};
+    expenseBreakdown(m).forEach(e=>{ by[e.category]=(by[e.category]||0)+e.share; });
+    const lines=Object.entries(by).map(([c,s])=>`<small>${esc(c)} ${ugx(s)}</small>`).join(" · ")||"<small>No expense share yet</small>";
     return `<div class="card" style="margin:0 0 10px">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
-        <div>
-          <b>${esc(m.name)}</b>
-          <span class="pill ${stCls}" style="margin-left:6px">${st}</span>
-        </div>
+        <div><b>${esc(m.name)}</b><div style="font-size:.8rem;color:var(--muted)">${esc(m.role||"Member")} · ${esc(m.phone||"—")}</div></div>
         <div style="text-align:right"><b>${ugx(n.net)}</b><div style="font-size:.75rem;color:var(--muted)">net payable</div></div>
       </div>
-      <p style="margin:8px 0 4px;font-size:.9rem">Contributed ${ugx(n.paid)} · Expense share ${ugx(n.share)} · Benefits ${ugx(n.benefits)} · Exit costs ${ugx(n.exitCosts)}</p>
+      <p style="margin:8px 0 4px;font-size:.9rem">Contributed ${ugx(n.paid)} · Interest/donations ${ugx(n.credits)} · Expense share ${ugx(n.share)} · Benefits ${ugx(n.benefits)} · Exit costs ${ugx(n.exitCosts)}</p>
+      <p style="margin:0 0 8px">${lines}</p>
       <div class="row">
         <button class="btn ghost" onclick="openBenefits(${m.id})">Benefits</button>
         <button class="btn gold" onclick="openExitCalc(${m.id})">Exit calc</button>
         <button class="btn ghost" onclick="showStmt(${m.id})">Statement</button>
       </div>
     </div>`;
-  }).join("")||"<p>No members yet.</p>";
-  const active=(DB.members||[]).filter(m=>m.active&&!m.exited).length;
-  const exited=(DB.members||[]).filter(m=>m.exited).length;
+  }).join("")||"<p>No active members match.</p>";
   return `<div class="card"><h3>Exit ledger</h3>
-    <p>One place for every member’s net position. Benefits and exit costs entered here are the same records used on the member ⋮ menu. Net = contributions − expense share − benefits − exit costs.</p>
-    <div class="stats">
-      <div class="stat"><b>${(DB.members||[]).length}</b><span>Members</span></div>
-      <div class="stat"><b>${active}</b><span>Active</span></div>
-      <div class="stat"><b>${exited}</b><span>Exited</span></div>
+    <p>One place for active members. Expense shares, benefits, exit costs and interest/donations entered here update each member’s ledger. The same records appear on the member ⋮ menu.</p>
+    <div class="row" style="align-items:center;margin:8px 0">
+      <span>Members can see their exit position</span>
+      <button class="btn ${show?"gold":"ghost"}" onclick="toggleExitVisible()">${show?"Visible to members":"Hidden from members"}</button>
+    </div>
+    <label>Search active member</label>
+    <input id="exitSearch" placeholder="Type a name" value="${esc(window._exitQ||"")}" oninput="window._exitQ=this.value;render()"/>
+    <h3 style="margin-top:14px">Add interest or donation</h3>
+    <p style="font-size:.85rem">Share by what each active member contributed in the chosen period: since the previous interest date, or within the calendar year.</p>
+    <label>Description</label><input id="intItem" placeholder="e.g. 2026 bank interest"/>
+    <label>Total amount to share</label><input id="intAmt" type="number" placeholder="e.g. 200000"/>
+    <label>Date of this deposit</label><input id="intDate" type="date" value="${new Date().toISOString().slice(0,10)}"/>
+    <label>Base contributions on</label>
+    <select id="intBasis">
+      <option value="since">Since previous interest / donation date</option>
+      <option value="year">This calendar year only</option>
+    </select>
+    <button class="btn gold" style="margin-top:8px" onclick="applyInterest()">Share by period contribution %</button>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><b>${list.length}</b><span>Active shown</span></div>
+      <div class="stat"><b>${(DB.members||[]).filter(m=>m.exited).length}</b><span>Already exited</span></div>
     </div>
   </div>
   ${rows}`;
 }
+function toggleExitVisible(){
+  if(!needPin()) return;
+  DB.settings.exitVisible = DB.settings.exitVisible===false;
+  save(); render();
+}
+function periodContrib(m, from, to){
+  const tx=(m.tx||[]).filter(x=>Number(x.amount)>0);
+  const inRange=tx.filter(x=>{
+    const d=String(x.at||"").slice(0,10);
+    return d && d>=from && d<=to;
+  });
+  if(inRange.length) return inRange.reduce((s,x)=>s+Number(x.amount||0),0);
+  return 0;
+}
+function applyInterest(){
+  if(!needPin()) return;
+  const item=(document.getElementById("intItem").value||"").trim();
+  const total=Number(document.getElementById("intAmt").value||0);
+  const date=(document.getElementById("intDate")||{}).value||new Date().toISOString().slice(0,10);
+  const basis=(document.getElementById("intBasis")||{}).value||"since";
+  if(!item||total<=0){ alert("Need a description and amount"); return; }
+  const act=activeMembers();
+  const last=String(DB.settings.lastInterestDate||"");
+  const year=date.slice(0,4);
+  const from = basis==="year" ? (year+"-01-01") : (last || (year+"-01-01"));
+  const bases=act.map(m=>({m, base:periodContrib(m, from, date)}));
+  const sum=bases.reduce((s,x)=>s+x.base,0);
+  if(!act.length || sum<=0){ alert("No contributions found in that period ("+from+" to "+date+"). Record payments with dates, or choose another period."); return; }
+  bases.forEach(({m, base})=>{
+    ensureExtras(m);
+    const share=Math.round(total*(base/sum));
+    if(share>0) m.credits.push({
+      item, amount:share, date, kind:"interest", basis,
+      from, pct:Math.round(1000*base/sum)/10,
+      enteredBy:treasurerName(), enteredAt:new Date().toISOString()
+    });
+  });
+  DB.settings.lastInterestDate=date;
+  save();
+  alert("Shared "+total.toLocaleString()+" UGX by contributions from "+from+" to "+date+".");
+  render();
+}
+
 function logBookView(){
   ensureLog();
   if(!window._actLoaded){
