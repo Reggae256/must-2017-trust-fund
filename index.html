@@ -356,7 +356,7 @@ const BANK="9030026155907", EMAIL="educationmustgraduates2017@gmail.com", KEY="m
 
 function defaultSettings(){
   return {
-    openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT, exitVisible:false,
+    openEnded:true, paused:false, pauseFrom:null, recoveryEmail:EMAIL, firstDeposit:FIRST_DEPOSIT,
     tickerText:"",
     chatCtl:{on:true,ttlHours:168,who:"members",react:true,reply:true,deleteOwn:true,slowSec:0,maxLen:500,showTyping:true,allowPhoto:true,allowCamera:true,allowVideo:true,allowAudio:true,allowFile:true,maxMediaKb:250,receipts:true,star:true,fwd:true},
 
@@ -401,9 +401,11 @@ function load(){
       const db=JSON.parse(raw);
       db.settings = Object.assign(defaultSettings(), db.settings||{});
       try{
-        const ev=localStorage.getItem("must2017exitVisible");
-        if(ev==="1") db.settings.exitVisible=true;
-        if(ev==="0") db.settings.exitVisible=false;
+        if(typeof db.settings.exitVisible!=="boolean"){
+          const ev=localStorage.getItem("must2017exitVisible");
+          if(ev==="1") db.settings.exitVisible=true;
+          if(ev==="0") db.settings.exitVisible=false;
+        }
       }catch(e){}
       db.notices = db.notices||[];
       db.resets = db.resets||[];
@@ -480,10 +482,14 @@ function listenCloud(){
     }
     if(treasHere && cat && lat && cat<=lat){ render(); return; }
     FB.skip=true;
-    const keepVis=exitShown();
+    const rawVis=(incoming.settings||{}).exitVisible;
     incoming.settings=Object.assign(defaultSettings(), incoming.settings||{});
-    if(typeof (incoming.settings||{}).exitVisible!=="boolean") incoming.settings.exitVisible=keepVis;
-    else try{ localStorage.setItem("must2017exitVisible", incoming.settings.exitVisible?"1":"0"); }catch(e){}
+    if(typeof rawVis==="boolean"){
+      incoming.settings.exitVisible=rawVis;
+      try{ localStorage.setItem("must2017exitVisible", rawVis?"1":"0"); }catch(e){}
+    } else {
+      incoming.settings.exitVisible=exitShown();
+    }
     incoming.notices=incoming.notices||[];
     incoming.resets=incoming.resets||[];
     incoming.pending=incoming.pending||[];
@@ -875,7 +881,7 @@ function toggleMenu(){
 }
 function setUi(k,v){
   DB.settings=DB.settings||defaultSettings();
-  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=false;
+  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=exitShown();
   DB.settings[k]=v; save(); applyUi(); toggleMenu(); toggleMenu();
 }
 function render(){
@@ -1842,7 +1848,7 @@ function treasurerDisplayName(){
   const m=treasurerMember();
   if(m){
     DB.settings=DB.settings||defaultSettings();
-  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=false;
+  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=exitShown();
     DB.settings.treasurer=DB.settings.treasurer||{};
     DB.settings.treasurer.name=m.name;
     return m.name;
@@ -2911,7 +2917,7 @@ if(location.hash.startsWith("#reset=")){
 
 function ensureDocs(){
   DB.settings=DB.settings||defaultSettings();
-  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=false;
+  if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=exitShown();
   (DB.expenses||[]).forEach(e=>{
     if(!e.allocatedTo){
       e.allocatedTo=(DB.members||[]).filter(m=>m.active).map(m=>m.id);
