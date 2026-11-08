@@ -686,7 +686,9 @@ function memberBenefitsTotal(m){
 }
 function memberExitCostsTotal(m){
   ensureExtras(m);
-  return (m.exitCosts||[]).reduce((s,c)=>s+Number(c.amount||0),0);
+  const own=(m.exitCosts||[]).reduce((s,c)=>s+Number(c.amount||0),0);
+  const shared=(m.active && !m.exited)?(DB.sharedExitCosts||[]).reduce((s,c)=>s+Number(c.amount||0),0):0;
+  return own+shared;
 }
 function memberCreditsTotal(m){
   ensureExtras(m);
@@ -939,6 +941,7 @@ function render(){
     if(tab==="backup") v.innerHTML=backupView();
   }
   try{ trackPage(); }catch(e){}
+  if(tab==="exit") setTimeout(()=>filterExit(window._exitQ||""), 30);
 }
 
 function memberHome(st){
@@ -3270,6 +3273,63 @@ function loadActivity(cb){
   }).catch(()=>cb([]));
 }
 
+
+function filterExit(v){
+  window._exitQ=v||"";
+  const q=window._exitQ.toLowerCase();
+  document.querySelectorAll("[data-exit-name]").forEach(el=>{
+    el.style.display=(!q || (el.dataset.exitName||"").includes(q))?"":"none";
+  });
+  const box=document.getElementById("exitHits");
+  if(!box) return;
+  const hits=activeMembers().filter(m=>!q || (m.name||"").toLowerCase().includes(q)).slice(0,10);
+  box.innerHTML=hits.map(m=>`<button type="button" class="btn ghost" onclick="pickExitName('${String(m.name).replace(/'/g,"\\'")}')">${esc(m.name)}</button>`).join(" ")
+    || "<span>No active member with that name</span>";
+}
+function pickExitName(name){
+  const inp=document.getElementById("exitSearch");
+  if(inp) inp.value=name;
+  filterExit(name);
+  const el=document.querySelector(`[data-exit-name="${name.toLowerCase()}"]`);
+  if(el) el.scrollIntoView({behavior:"smooth", block:"center"});
+}
+function addSharedExpense(){
+  if(!needPin()) return;
+  const item=(document.getElementById("shItem").value||"").trim();
+  const amount=Number(document.getElementById("shAmt").value||0);
+  const date=(document.getElementById("shDate")||{}).value||new Date().toISOString().slice(0,10);
+  const cat=(document.getElementById("shCat")||{}).value||"Other";
+  const act=activeMembers();
+  if(!item||amount<=0){ alert("Need a description and amount"); return; }
+  if(!act.length){ alert("No active members"); return; }
+  const share=Math.round(amount/act.length);
+  DB.expenses=DB.expenses||[];
+  DB.expenses.push({
+    item, amount, by:treasurerName(), date, seen:true, category:cat,
+    activeCount:act.length, share, allocatedTo:act.map(m=>m.id),
+    enteredBy:treasurerName(), enteredAt:new Date().toISOString(), shared:true
+  });
+  save();
+  alert("Added. Each active member is charged "+share.toLocaleString()+" UGX.");
+  render();
+}
+function addSharedExit(){
+  if(!needPin()) return;
+  const item=(document.getElementById("shExitItem").value||"").trim();
+  const amount=Number(document.getElementById("shExitAmt").value||0);
+  if(!item||amount<=0){ alert("Need a description and amount"); return; }
+  DB.sharedExitCosts=DB.sharedExitCosts||[];
+  DB.sharedExitCosts.push({item, amount, date:new Date().toISOString().slice(0,10), enteredBy:treasurerName(), enteredAt:new Date().toISOString()});
+  save();
+  alert("Exit cost added to every active member.");
+  render();
+}
+function delSharedExit(i){
+  if(!needPin()) return;
+  DB.sharedExitCosts=DB.sharedExitCosts||[];
+  DB.sharedExitCosts.splice(i,1);
+  save(); render();
+}
 function exitLedgerView(){
   const q=(window._exitQ||"").toLowerCase();
   const list=(DB.members||[]).filter(m=>m.active && !m.exited)
@@ -3281,7 +3341,7 @@ function exitLedgerView(){
     const by={};
     expenseBreakdown(m).forEach(e=>{ by[e.category]=(by[e.category]||0)+e.share; });
     const lines=Object.entries(by).map(([c,s])=>`<small>${esc(c)} ${ugx(s)}</small>`).join(" · ")||"<small>No expense share yet</small>";
-    return `<div class="card" style="margin:0 0 10px">
+    return `<div class="card" data-exit-name="${esc((m.name||"").toLowerCase())}" style="margin:0 0 10px">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
         <div><b>${esc(m.name)}</b><div style="font-size:.8rem;color:var(--muted)">${esc(m.role||"Member")} · ${esc(m.phone||"—")}</div></div>
         <div style="text-align:right"><b>${ugx(n.net)}</b><div style="font-size:.75rem;color:var(--muted)">net payable</div></div>
@@ -3299,7 +3359,21 @@ function exitLedgerView(){
     <p>One place for active members. Expense shares, benefits, exit costs and interest/donations entered here update each member’s ledger. The same records appear on the member ⋮ menu.</p>
 
     <label>Search active member</label>
-    <input id="exitSearch" placeholder="Type a name" value="${esc(window._exitQ||"")}" oninput="window._exitQ=this.value;render()"/>
+    <input id="exitSearch" placeholder="Type a name" value="${esc(window._exitQ||"")}" oninput="filterExit(this.value)" autocomplete="off"/>
+    <div id="exitHits" class="row" style="margin-top:8px"></div>
+    <h3 style="margin-top:14px">Association expense — enter once</h3>
+    <p style="font-size:.85rem">Same cost for all active members. Enter it once. Each active member is charged total ÷ number of active members.</p>
+    <label>Category</label><select id="shCat"><option>Burial</option><option>Party</option><option>Association</option><option>Other</option></select>
+    <label>Description</label><input id="shItem" placeholder="e.g. Burial support"/>
+    <label>Total amount</label><input id="shAmt" type="number"/>
+    <label>Date</label><input id="shDate" type="date" value="${new Date().toISOString().slice(0,10)}"/>
+    <button class="btn gold" style="margin-top:8px" onclick="addSharedExpense()">Add to all active members</button>
+    <h3 style="margin-top:14px">Exit / transaction cost — enter once</h3>
+    <p style="font-size:.85rem">Same deduction for every active member, for example transport of a slip or bank charges.</p>
+    <label>Description</label><input id="shExitItem" placeholder="e.g. Transport of slip"/>
+    <label>Amount per member</label><input id="shExitAmt" type="number"/>
+    ${(DB.sharedExitCosts||[]).map((c,i)=>`<div class="row" style="justify-content:space-between"><span>${esc(c.item)} · ${ugx(c.amount)}</span><button class="btn danger" onclick="delSharedExit(${i})">✕</button></div>`).join("")}
+    <button class="btn gold" style="margin-top:8px" onclick="addSharedExit()">Add exit cost to all active</button>
     <h3 style="margin-top:14px">Add interest or donation</h3>
     <p style="font-size:.85rem">Share by what each active member contributed in the chosen period: since the previous interest date, or within the calendar year.</p>
     <label>Description</label><input id="intItem" placeholder="e.g. 2026 bank interest"/>
