@@ -336,9 +336,9 @@ const SEED_MEMBERS = [{"name": "Bankunda Aron", "fee": 10000, "active": true, "p
 const SEED_EXPENSES = [
   {item:"Registration and opening account", date:"2025-04-01", amount:528200, by:"Executive", seen:true},
   {item:"Transport x2 mobile banking / FlexiPay", date:"2025-04-15", amount:16000, by:"Treasurer", seen:true},
-  {item:"Godwin's wedding party", date:"2025-08-23", amount:250000, by:"Godwin", seen:true},
-  {item:"Refund to Julius Turyahabwe", date:"2026-05-05", amount:47500, by:"Julius", seen:true},
-  {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias", seen:true}
+  {item:"Godwin's wedding party", date:"2025-08-23", amount:250000, by:"Godwin", seen:true, personal:true, category:"Party"},
+  {item:"Refund to Julius Turyahabwe", date:"2026-05-05", amount:47500, by:"Julius", seen:true, personal:true, category:"Other"},
+  {item:"Mathias' father burial", date:"2026-06-24", amount:500000, by:"Mathias", seen:true, personal:true, category:"Burial"}
 ];
 const START=new Date(2025,0,1), MONTHLY=10000, GRACE=4, FIRST_DEPOSIT=100000;
 const PAY_CODES={
@@ -670,7 +670,7 @@ function expenseShareAmount(e){
   return Math.round((Number(e.amount)||0)/n);
 }
 function expenseAppliesTo(e,m){
-  if(!e || !m) return false;
+  if(!e || !m || e.personal) return false;
   if(Array.isArray(e.allocatedTo) && e.allocatedTo.length){
     return e.allocatedTo.some(id=>String(id)===String(m.id));
   }
@@ -2920,6 +2920,9 @@ function ensureDocs(){
   DB.settings=DB.settings||defaultSettings();
   if(typeof DB.settings.exitVisible!=="boolean") DB.settings.exitVisible=exitShown();
   (DB.expenses||[]).forEach(e=>{
+    if(!e.category) e.category=expenseCategory(e);
+    const nm=String(e.item||"").toLowerCase();
+    if(/godwin/.test(nm) || /julius/.test(nm) || /mathias/.test(nm)) e.personal=true;
     if(!e.allocatedTo){
       e.allocatedTo=(DB.members||[]).filter(m=>m.active).map(m=>m.id);
       e.activeCount=e.activeCount||e.allocatedTo.length||1;
@@ -3293,6 +3296,101 @@ function pickExitName(name){
   const el=document.querySelector(`[data-exit-name="${name.toLowerCase()}"]`);
   if(el) el.scrollIntoView({behavior:"smooth", block:"center"});
 }
+
+function interestRuns(){
+  const map={};
+  (DB.members||[]).forEach(m=>{
+    (m.credits||[]).forEach((c,idx)=>{
+      const key=(c.item||"")+"|"+(c.date||"");
+      if(!map[key]) map[key]={key, item:c.item||"Interest", date:c.date||"", total:0, count:0};
+      map[key].total+=Number(c.amount||0);
+      map[key].count+=1;
+    });
+  });
+  return Object.values(map);
+}
+function editExpense(i){
+  if(!needPin()) return;
+  const e=DB.expenses[i]; if(!e) return;
+  openModal(`<h3>Edit association expense</h3>
+    <label>Category</label><select id="edExCat">
+      ${["Burial","Party","Association","Other"].map(c=>`<option ${((e.category||expenseCategory(e))===c)?"selected":""}>${c}</option>`).join("")}
+    </select>
+    <label>Description</label><input id="edExItem" value="${esc(e.item||"")}"/>
+    <label>Total amount</label><input id="edExAmt" type="number" value="${Number(e.amount||0)}"/>
+    <label>Date</label><input id="edExDate" type="date" value="${esc(e.date||"")}"/>
+    <label>Active members at the time</label><input id="edExN" type="number" value="${Number(e.activeCount||activeMembers().length||1)}"/>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="saveExpense(${i})">Save</button>
+      <button class="btn danger" onclick="delExpense(${i})">Delete</button>
+      <button class="btn ghost" onclick="closeModal()">Close</button>
+    </div>`);
+}
+function saveExpense(i){
+  if(!needPin()) return;
+  const e=DB.expenses[i]; if(!e) return;
+  e.category=(document.getElementById("edExCat")||{}).value||e.category;
+  e.item=(document.getElementById("edExItem").value||"").trim()||e.item;
+  e.amount=Number(document.getElementById("edExAmt").value||0);
+  e.date=(document.getElementById("edExDate")||{}).value||e.date;
+  e.activeCount=Math.max(1, Number(document.getElementById("edExN").value||e.activeCount||1));
+  e.share=Math.round(e.amount/e.activeCount);
+  if(!e.allocatedTo || !e.allocatedTo.length) e.allocatedTo=activeMembers().map(m=>m.id);
+  e.editedBy=treasurerName();
+  e.editedAt=new Date().toISOString();
+  save(); closeModal(); render();
+}
+function delExpense(i){
+  if(!needPin()) return;
+  if(!confirm("Delete this association expense?")) return;
+  DB.expenses.splice(i,1);
+  save(); closeModal(); render();
+}
+function editInterest(enc){
+  if(!needPin()) return;
+  const key=decodeURIComponent(enc);
+  const run=interestRuns().find(r=>r.key===key); if(!run) return;
+  openModal(`<h3>Edit interest / donation</h3>
+    <p>This updates the same share on every member who received it.</p>
+    <label>Description</label><input id="edIntItem" value="${esc(run.item)}"/>
+    <label>Total amount shared</label><input id="edIntAmt" type="number" value="${run.total}"/>
+    <label>Date</label><input id="edIntDate" type="date" value="${esc(run.date)}"/>
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="saveInterest('${enc}')">Save</button>
+      <button class="btn danger" onclick="delInterest('${enc}')">Delete</button>
+      <button class="btn ghost" onclick="closeModal()">Close</button>
+    </div>`);
+}
+function saveInterest(enc){
+  if(!needPin()) return;
+  const key=decodeURIComponent(enc);
+  const item=(document.getElementById("edIntItem").value||"").trim();
+  const total=Number(document.getElementById("edIntAmt").value||0);
+  const date=(document.getElementById("edIntDate")||{}).value||"";
+  if(!item||total<=0){ alert("Need description and amount"); return; }
+  const rows=[];
+  (DB.members||[]).forEach(m=>{
+    (m.credits||[]).forEach(c=>{
+      if(((c.item||"")+"|"+(c.date||""))===key) rows.push(c);
+    });
+  });
+  const old=rows.reduce((s,c)=>s+Number(c.amount||0),0)||1;
+  rows.forEach(c=>{
+    c.item=item;
+    c.date=date;
+    c.amount=Math.round(total*(Number(c.amount||0)/old));
+  });
+  save(); closeModal(); render();
+}
+function delInterest(enc){
+  if(!needPin()) return;
+  if(!confirm("Remove this interest / donation from all members?")) return;
+  const key=decodeURIComponent(enc);
+  (DB.members||[]).forEach(m=>{
+    m.credits=(m.credits||[]).filter(c=>((c.item||"")+"|"+(c.date||""))!==key);
+  });
+  save(); closeModal(); render();
+}
 function addSharedExpense(){
   if(!needPin()) return;
   const item=(document.getElementById("shItem").value||"").trim();
@@ -3374,6 +3472,19 @@ function exitLedgerView(){
     <label>Amount per member</label><input id="shExitAmt" type="number"/>
     ${(DB.sharedExitCosts||[]).map((c,i)=>`<div class="row" style="justify-content:space-between"><span>${esc(c.item)} · ${ugx(c.amount)}</span><button class="btn danger" onclick="delSharedExit(${i})">✕</button></div>`).join("")}
     <button class="btn gold" style="margin-top:8px" onclick="addSharedExit()">Add exit cost to all active</button>
+    <h3 style="margin-top:14px">Association expenses already in the books</h3>
+    <p style="font-size:.85rem">These are already captured, including registration and opening account, and transport for mobile banking / FlexiPay. Edit any line, or add a new one above.</p>
+    ${(DB.expenses||[]).map((e,i)=>({e,i})).filter(x=>!x.e.personal).map(({e,i})=>`<div class="card" style="margin:0 0 8px">
+      <b>${esc(e.category||expenseCategory(e))}</b> · ${esc(e.item||"")}
+      <div style="font-size:.85rem">${esc(e.date||"—")} · total ${ugx(e.amount)} · share ${ugx(expenseShareAmount(e))} · ${e.activeCount||"—"} members</div>
+      <button class="btn ghost" style="margin-top:6px" onclick="editExpense(${i})">Edit</button>
+    </div>`).join("")||"<p>None yet.</p>"}
+    <h3 style="margin-top:14px">Interest / donations already shared</h3>
+    ${interestRuns().map(r=>`<div class="card" style="margin:0 0 8px">
+      <b>${esc(r.item)}</b>
+      <div style="font-size:.85rem">${esc(r.date)} · total shared ${ugx(r.total)} · ${r.count} members</div>
+      <button class="btn ghost" style="margin-top:6px" onclick="editInterest('${encodeURIComponent(r.key)}')">Edit</button>
+    </div>`).join("")||"<p>None yet.</p>"}
     <h3 style="margin-top:14px">Add interest or donation</h3>
     <p style="font-size:.85rem">Share by what each active member contributed in the chosen period: since the previous interest date, or within the calendar year.</p>
     <label>Description</label><input id="intItem" placeholder="e.g. 2026 bank interest"/>
