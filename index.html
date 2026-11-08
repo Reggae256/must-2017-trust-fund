@@ -670,7 +670,7 @@ function expenseShareAmount(e){
   return Math.round((Number(e.amount)||0)/n);
 }
 function expenseAppliesTo(e,m){
-  if(!e || !m || e.personal || e.refund) return false;
+  if(!e || !m || e.personal || e.refund || isRefund(e)) return false;
   if(Array.isArray(e.allocatedTo) && e.allocatedTo.length){
     return e.allocatedTo.some(id=>String(id)===String(m.id));
   }
@@ -704,7 +704,7 @@ function expenseCategory(e){
   return "Other";
 }
 function expenseBreakdown(m){
-  return (DB.expenses||[]).filter(e=>expenseAppliesTo(e,m)).map(e=>({
+  return (DB.expenses||[]).filter(e=>expenseAppliesTo(e,m) && !isRefund(e)).map(e=>({
     date:e.date||"", item:e.item||"Expense", category:expenseCategory(e),
     share:expenseShareAmount(e), total:Number(e.amount||0)
   }));
@@ -2923,7 +2923,7 @@ function ensureDocs(){
   (DB.expenses||[]).forEach(e=>{
     if(!e.category) e.category=expenseCategory(e);
     const nm=String(e.item||"").toLowerCase();
-    if(/refund/.test(nm)){ e.refund=true; e.personal=false; e.category=e.category||"Refund"; }
+    if(/refund/.test(nm) || e.refund || e.category==="Refund"){ e.refund=true; e.personal=false; e.category="Refund"; e.share=0; e.allocatedTo=[]; }
     if(/godwin|mathias|party|burial/.test(nm) && !e.refund) e.personal=false;
     if(!e.allocatedTo){
       e.allocatedTo=(DB.members||[]).filter(m=>m.active).map(m=>m.id);
